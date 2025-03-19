@@ -25,7 +25,7 @@ services:
       - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:${POSTGRES_PASSWORD}@postgres/airflow
       - AIRFLOW__CORE__DEFAULT_TIMEZONE=Asia/Shanghai
     volumes:
-      - ./logs:/opt/airflow/logs
+      - ./logs:/opt/airflow/logs:z
       - ./requirements.txt:/opt/airflow/requirements.txt
     entrypoint: ["bash", "-c", "pip install --no-cache-dir -r requirements.txt && airflow db check-migrations || airflow db init && airflow users list | grep -q admin || airflow users create --username admin --password ${ADMIN_PASSWORD} --firstname Fang --lastname Yongchao --role Admin --email ${ADMIN_EMAIL}"]
     depends_on:
@@ -44,7 +44,7 @@ services:
     ports:
       - "8080:8080"
     volumes:
-      - ./logs:/opt/airflow/logs
+      - ./logs:/opt/airflow/logs:z
       - ./requirements.txt:/opt/airflow/requirements.txt
     entrypoint: ["bash", "-c", "pip install --no-cache-dir -r requirements.txt && airflow webserver"]
     depends_on:
@@ -61,7 +61,7 @@ services:
       - PYTHONPATH=/opt/airflow
     volumes:
       - ./dags:/opt/airflow/dags
-      - ./logs:/opt/airflow/logs
+      - ./logs:/opt/airflow/logs:z
       - ./plugins:/opt/airflow/plugins
       - ./include:/opt/airflow/include
       - ./requirements.txt:/opt/airflow/requirements.txt
