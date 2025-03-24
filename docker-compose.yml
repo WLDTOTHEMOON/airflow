@@ -27,7 +27,7 @@ services:
     volumes:
       - logs:/opt/airflow/logs
       - ./requirements.txt:/opt/airflow/requirements.txt
-    entrypoint: ["bash", "-c", "pip install --no-cache-dir -r requirements.txt && airflow db check-migrations || airflow db init && airflow users list | grep -q admin || airflow users create --username admin --password ${ADMIN_PASSWORD} --firstname Fang --lastname Yongchao --role Admin --email ${ADMIN_EMAIL}"]
+    entrypoint: ["bash", "-c", "airflow db check-migrations || airflow db init && airflow users list | grep -q admin || airflow users create --username admin --password ${ADMIN_PASSWORD} --firstname Fang --lastname Yongchao --role Admin --email ${ADMIN_EMAIL}"]
     depends_on:
       postgres:
         condition: service_healthy
