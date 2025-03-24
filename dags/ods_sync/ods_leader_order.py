@@ -153,6 +153,4 @@ def ods_leader_order():
     path = fetch_write_data(new_tokens)
     read_sync_data(path)
 
-
-
 ods_leader_order()
