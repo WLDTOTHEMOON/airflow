@@ -90,6 +90,39 @@ class KsClient(Client):
 
         return response.json()
     
+    def get_cps_orders(self, access_token, begin_time: datetime, end_time: datetime, cps_order_status: int = 0, 
+                       sort_type: int = 2, query_type: int = 2, page_size: int = 100, pcursor: str = ''):
+
+        api_name = 'open.distribution.cps.distributor.order.cursor.list'
+
+        begin_time = int(begin_time.timestamp() * 1000)
+        end_time = int(end_time.timestamp() * 1000)
+
+        params = {
+            'sortType': sort_type,
+            'queryType': query_type,
+            'beginTime': begin_time,
+            'endTime': end_time,
+            'cpsOrderStatus': cps_order_status,
+            'pageSize': page_size,
+            'pcursor': pcursor
+        }
+        logger.info(params)
+
+        result = []
+        while params['pcursor'] != 'nomore':
+            response = self._request(
+                method='GET', access_token=access_token, api_name=api_name, params=params
+            )
+            if response['msg'] == 'success':
+                result = result + response['data']['orderView']
+                params['pcursor'] = response['data']['pcursor']
+                continue
+            else:
+                break
+
+        return result
+    
     def get_leader_orders(self, access_token, begin_time: datetime, end_time: datetime, cps_order_status: int = 0,
                            sort_type: int = 2, query_type: int = 2, distributor_id: int = 0, fund_type: int = 1, 
                            page_size: int = 100, pcursor: str = ''):
