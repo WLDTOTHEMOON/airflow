@@ -21,7 +21,8 @@ client=CosS3Client(CosConfig(
     SecretId=cos_config['secret_id'], SecretKey=cos_config['secret_key'], Region=cos_config['region']
 ))
 
-@dag(schedule=None, max_active_tasks=3, max_active_runs=1,
+@dag(schedule=None, 
+    #  max_active_tasks=3, max_active_runs=1,
 # @dag(schedule_interval='*/10 * * * *', start_date=pendulum.datetime(2023, 1, 1), catchup=False,
      default_args={'owner': 'Fang Yongchao'}, tags=['ods', 'sync'])
 def ods_cps_order():
