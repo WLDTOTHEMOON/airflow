@@ -21,9 +21,9 @@ client=CosS3Client(CosConfig(
     SecretId=cos_config['secret_id'], SecretKey=cos_config['secret_key'], Region=cos_config['region']
 ))
 
-@dag(schedule=None, 
+# @dag(schedule=None, 
     #  max_active_tasks=3, max_active_runs=1,
-# @dag(schedule_interval='*/10 * * * *', start_date=pendulum.datetime(2023, 1, 1), catchup=False,
+@dag(schedule_interval='*/10 * * * *', start_date=pendulum.datetime(2023, 1, 1), catchup=False,
      default_args={'owner': 'Fang Yongchao'}, tags=['ods', 'sync'])
 def ods_cps_order():
     @task
@@ -95,10 +95,10 @@ def ods_cps_order():
     
     @task(trigger_rule='all_done')
     def fetch_write_data(tokens, **kwargs):
-        # begin_time = kwargs['data_interval_start']
-        # end_time = kwargs['data_interval_end']
-        begin_time = pendulum.datetime(2025, 3, 27, 9, 20, 0)
-        end_time = pendulum.datetime(2025, 3, 27, 9, 30, 0)
+        begin_time = kwargs['data_interval_start']
+        end_time = kwargs['data_interval_end']
+        # begin_time = pendulum.datetime(2025, 3, 27, 9, 20, 0)
+        # end_time = pendulum.datetime(2025, 3, 27, 9, 30, 0)
         raw_data = ks_client.get_cps_orders(access_token=tokens['access_token'], begin_time=begin_time, end_time=end_time)
         
         date_fmt = begin_time.in_tz('Asia/Shanghai').format('YYYYMMDD')
