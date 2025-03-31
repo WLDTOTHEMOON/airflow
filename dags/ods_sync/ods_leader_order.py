@@ -12,7 +12,8 @@ TABLE = 'ods_ks_leader_order'
 
 # @dag(schedule=None,
 @dag(schedule_interval='0 * * * *', start_date=pendulum.datetime(2023, 1, 1), catchup=False,
-     default_args={'owner': 'Fang Yongchao'}, tags=['ods', 'sync'])
+     default_args={'owner': 'Fang Yongchao'}, tags=['ods', 'sync'],
+     max_active_tasks=3, max_active_runs=1)
 def ods_leader_order():
     def timestamp2datetime(timestamp):
         try:
