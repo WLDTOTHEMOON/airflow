@@ -2,6 +2,7 @@ apache-airflow==2.10.5
 cos_python_sdk_v5==1.9.35
 httpx==0.28.1
 lark_oapi==1.4.12
-pandas==2.2.3
+pandas==2.1.4
 pendulum==3.0.0
 SQLAlchemy==1.4.54
+xlrd==2.0.1

@@ -18,7 +18,7 @@ services:
       start_period: 10s
 
   airflow-init:
-    image: apache/airflow:2.10.5
+    image: my_airflow
     container_name: airflow-init
     environment:
       - AIRFLOW__CORE__EXECUTOR=LocalExecutor
@@ -32,7 +32,7 @@ services:
         condition: service_healthy
 
   airflow-webserver:
-    build: .
+    image: my_airflow
     container_name: airflow-webserver
     environment:
       - AIRFLOW__CORE__EXECUTOR=LocalExecutor
@@ -50,7 +50,7 @@ services:
         condition: service_completed_successfully
 
   airflow-scheduler:
-    build: .
+    image: my_airflow
     container_name: airflow-scheduler
     environment:
       - AIRFLOW__CORE__EXECUTOR=LocalExecutor
