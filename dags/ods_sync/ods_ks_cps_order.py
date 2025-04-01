@@ -11,9 +11,9 @@ TABLE = 'ods_ks_cps_order'
 
 
 @dag(schedule_interval='0 * * * *', start_date=pendulum.datetime(2023, 1, 1), catchup=False,
-     default_args={'owner': 'Fang Yongchao'}, tags=['ods', 'sync'],
+     default_args={'owner': 'Fang Yongchao'}, tags=['ods', 'sync', 'kuaishou'],
      max_active_tasks=3, max_active_runs=1)
-def ods_cps_order():
+def ods_ks_cps_order():
     def timestamp2datetime(timestamp):
         try:
             timestamp = int(timestamp)
@@ -235,4 +235,4 @@ def ods_cps_order():
     summary(num)
 
 
-ods_cps_order()
+ods_ks_cps_order()
