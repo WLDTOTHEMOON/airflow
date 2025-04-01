@@ -161,6 +161,7 @@ def ods_cps_order():
         client=CosS3Client(CosConfig(
             SecretId=cos_config['secret_id'], SecretKey=cos_config['secret_key'], Region=cos_config['region']
         ))
+        logger.info(f'获取数据 {path}')
         if path['flag']:
             raw_data = client.get_object(Bucket=cos_config['bucket'], Key=path['path'])
             raw_data = raw_data['Body'].get_raw_stream().read()
@@ -221,10 +222,17 @@ def ods_cps_order():
             logger.info('数据为空，跳过同步')
             return 0
 
+    @task
+    def summary(num):
+        total = sum(num)
+        logger.info(f'完成数据同步 {total} items')
+
     open_ids = get_open_id()
     tokens = get_token.expand(open_id=open_ids)
     new_tokens = update_token.expand(tokens=tokens)
     path = fetch_write_data.expand(tokens=new_tokens)
-    read_sync_data.expand(path=path)
+    num = read_sync_data.expand(path=path)
+    summary(num)
+
 
 ods_cps_order()
