@@ -7,13 +7,14 @@ logger = logging.getLogger(__name__)
 MYSQL_KEYWORDS = ['group']
 LEADER_OPEN_ID = Variable.get('leader_open_id')
 SCHEMA = 'ods'
-TABLE = 'ods_ks_activity_info'
+TABLE = 'ods_ks_activity_item_list'
+
 
 @dag(schedule_interval='0 * * * *', start_date=pendulum.datetime(2023, 1, 1), catchup=False,
 # @dag(schedule=None,
      default_args={'owner': 'Fang Yongchao'}, tags=['ods', 'sync', 'kuaishou'],
-     max_active_tasks=3, max_active_runs=1)
-def ods_ks_activity_info():
+     max_active_tasks=4, max_active_runs=1)
+def ods_ks_activity_item_list():
     def timestamp2datetime(timestamp):
         try:
             timestamp = int(timestamp)
@@ -103,7 +104,24 @@ def ods_ks_activity_info():
             return new_tokens
 
     @task(retries=5, retry_delay=10)
-    def fetch_write_data(tokens, **kwargs):
+    def get_activity_list(**kwargs):
+        from include.database.mysql import engine
+        import pandas as pd
+        begin_time = kwargs['data_interval_start']
+        begin_time_fmt = begin_time.in_tz('Asia/Shanghai').format('YYYY-MM-DD HH:mm:ss')
+        sql = f'''
+        select activity_id
+        from ods.ods_ks_activity_info
+        where activity_status != 4
+            or date(activity_end_time) >= '{begin_time_fmt}'
+        order by activity_id desc
+        limit 10
+        '''
+        acticity_id_list = pd.read_sql(sql, engine).activity_id.to_list()
+        return acticity_id_list
+
+    @task(trigger_rule='all_done', retries=5, retry_delay=10)
+    def fetch_write_data(tokens, activity_id, **kwargs):
         from qcloud_cos import CosConfig, CosS3Client
         from airflow.models import Variable
         from include.kuaishou.ks_client import KsClient
@@ -118,79 +136,103 @@ def ods_ks_activity_info():
         ks_client = KsClient(**Variable.get('kuaishou', deserialize_json=True))
         cos_config = Variable.get('cos', deserialize_json=True)
         client=CosS3Client(CosConfig(SecretId=cos_config['secret_id'], SecretKey=cos_config['secret_key'], Region=cos_config['region']))
-        raw_data = ks_client.get_activity_info(access_token=tokens['access_token'], limit=100)
+        raw_data = ks_client.get_activity_item_list(access_token=tokens['access_token'], activity_id=activity_id)
 
-        path = f'activity_info/{date_fmt}/{begin_time_fmt}_{end_time_fmt}.json'
+        path = f'activity_item_list/{date_fmt}/{activity_id}_{begin_time_fmt}_{end_time_fmt}.json'
         client.put_object(
             Bucket=cos_config['bucket'],
             Body=json.dumps(raw_data, indent=2),
             Key=path
         )
-        return path
+        return {
+            'flag': True if raw_data else False,
+            'path': path
+        }
 
-    @task(retries=5, retry_delay=10)
+    @task(trigger_rule='all_done', retries=5, retry_delay=10)
     def read_sync_data(path):
         from qcloud_cos import CosConfig, CosS3Client
         from airflow.models import Variable
         from include.database.mysql import engine
         from sqlalchemy import text
         import json
-
         cos_config = Variable.get('cos', deserialize_json=True)
         client=CosS3Client(CosConfig(
             SecretId=cos_config['secret_id'], SecretKey=cos_config['secret_key'], Region=cos_config['region']
         ))
-        raw_data = client.get_object(Bucket=cos_config['bucket'], Key=path)
-        raw_data = raw_data['Body'].get_raw_stream().read()
-        raw_data = json.loads(raw_data)
 
-        processed_data = [
-            {
-                'activity_id': each.get('activityId'),
-                'activity_user_id': each.get('activityUserId'),
-                'activity_user_nick_name': each.get('activityUserNickName'),
-                'activity_title': each.get('activityTitle'),
-                'activity_type': each.get('activityType'),
-                'activity_begin_time': timestamp2datetime(each.get('activityBeginTime')),
-                'activity_end_time': timestamp2datetime(each.get('activityEndTime')),
-                'activity_status': each.get('activityStatus'),
-                'apply_item_count': each.get('activityItemDataView', {}).get('applyItemCount'),
-                'wait_audit_item_count': each.get('activityItemDataView', {}).get('waitAuditItemCount'),
-                'audit_pass_item_count': each.get('activityItemDataView', {}).get('auditPassItemCount'),
-                'min_investment_promotion_rate': each.get('minInvestmentPromotionRate'),
-                'min_item_commission_rate': each.get('minItemCommissionRate'),
-                'contact': ','.join(map(str, each.get('contact'))),
-                'pre_exclusive_activity_sign_type': each.get('preExclusiveActivitySignType'),
-                'seller_apply_url': each.get('sellerApplyUrl'),
-                'leader_apply_url': each.get('leaderApplyUrl'),
-                'exists_activity_id': each.get('existsActivityId'),
-                'promoter_id': ','.join(map(str, each.get('promoterId', []))),
-                'tips': each.get('tips'),
-                'base_order_amount': each.get('baseOrderAmount'),
-                'base_order_status': each.get('baseOrderStatus'),
-                'cooperate_begin_time': timestamp2datetime(each.get('cooperateBeginTime')),
-                'cooperate_end_time': timestamp2datetime(each.get('cooperateEndTime'))
-            } for each in raw_data
-        ]
+        if path['flag']:
+            raw_data = client.get_object(Bucket=cos_config['bucket'], Key=path['path'])
+            raw_data = raw_data['Body'].get_raw_stream().read()
+            raw_data = json.loads(raw_data)
 
-        sql = generate_upsert_template(schema=SCHEMA, table=TABLE)
-        logger.info(sql)
-        with engine.connect() as conn:
-            conn.execute(text(sql), processed_data)
-        logger.info(f'完成数据同步 {len(processed_data)} items')
-    
-    from airflow.sensors.external_task import ExternalTaskMarker
-    marker = ExternalTaskMarker(
-        task_id='activity_info_finished',
-        external_dag_id='ods_ks_activity_item_list',
-        external_task_id='get_activity_list'
+            processed_data = [
+                {
+                    'item_title': each.get('itemTitle'),
+                    'reason': each.get('reason'),
+                    'item_volume': each.get('itemVolume'),
+                    'base_order_status': each.get('baseOrderStatus'),
+                    'item_audit_status': each.get('itemAuditStatus'),
+                    'base_order_amount': each.get('baseOrderAmount'),
+                    'cooperate_begin_time': timestamp2datetime(each.get('cooperateBeginTime')),
+                    'activity_id': each.get('activityId'),
+                    'seller_id': each.get('sellerId'),
+                    'disabled_msg': each.get('disabledMsg'),
+                    'identity': each.get('identity'),
+                    'item_status': each.get('itemStatus'),
+                    'seller_nick_name': each.get('sellerNickName'),
+                    'disabled': each.get('disabled'),
+                    'pre_activity_id': each.get('preActivityId'),
+                    'shop_id': each.get('shopId'),
+                    'item_img_url': each.get('itemImgUrl'),
+                    'cooperate_end_time': timestamp2datetime(each.get('cooperateEndTime')),
+                    'investment_promotion_rate': each.get('investmentPromotionRate'),
+                    'investment_promotion_remise_rate': each.get('investmentPromotionRemiseRate'),
+                    'item_category_name': each.get('itemCategoryName'),
+                    'item_commission_rate': each.get('itemCommissionRate'),
+                    'item_id': each.get('itemId'),
+                    'item_leaf_category_id': each.get('itemLeafCategoryId'),
+                    'item_stock': each.get('itemStock'),
+                    'item_price': each.get('itemPrice'),
+                    'contact_user_type': ','.join(map(str, each.get('contactUserType', []))),
+                    'item_apply_time': timestamp2datetime(each.get('itemApplyTime')),
+                    'contact': ','.join(map(str, each.get('contact', [])))
+                } for each in raw_data
+            ]
+
+            sql = generate_upsert_template(schema=SCHEMA, table=TABLE)
+            logger.info(sql)
+            with engine.connect() as conn:
+                conn.execute(text(sql), processed_data)
+            logger.info(f'完成数据同步 {len(processed_data)} items')
+            return len(processed_data)
+        else:
+            logger.info('数据为空，跳过同步')
+            return 0
+
+    @task(trigger_rule='all_done', retries=5, retry_delay=10)
+    def summary(num):
+        total = sum(num)
+        logger.info(f'完成数据同步 {total} items')
+
+    from airflow.sensors.external_task import ExternalTaskSensor
+    marker = ExternalTaskSensor(
+        task_id='wait_for_activity_info_finish',
+        external_dag_id='ods_ks_activity_info',
+        external_task_id='activity_info_finished',
+        mode='poke',
+        timeout=600,
+        poke_interval=30,
+        execution_delta=pendulum.duration(hours=0)
     )
 
     tokens = get_token()
     new_tokens = update_token(tokens=tokens)
-    path = fetch_write_data(tokens=new_tokens)
-    read_sync_data(path) >> marker
+    activity_id_list = get_activity_list()
+    path = fetch_write_data.partial(tokens=new_tokens).expand(activity_id=activity_id_list)
+    num = read_sync_data.expand(path=path)
+    summary(num)
 
-    
+    marker >> activity_id_list
 
-ods_ks_activity_info()
+ods_ks_activity_item_list()

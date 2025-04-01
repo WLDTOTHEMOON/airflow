@@ -191,3 +191,38 @@ class KsClient(Client):
             return None
 
         return result
+    
+    def get_activity_item_list(self, access_token, activity_id, limit: int = 200, offset: int = 0):
+        api_name = 'open.distribution.investment.activity.open.item.list'
+
+        params = {
+            'activity_id': activity_id,
+            'limit': limit,
+            'offset': offset
+        }
+
+        result = []
+
+        response = self._request(
+            method='GET', api_name=api_name, access_token=access_token, params=params
+        )
+        if response['msg'] == 'success':
+            total = response.get('data').get('total')
+            result = result + response['data']['activityItemDataList']
+            # 数据量大于limit，需要循环获取
+            if total > limit:
+                params['offset'] = params['offset'] + limit
+                while params['offset'] < total:
+                    response = self._request(
+                        method='GET', api_name=api_name, access_token=access_token, params=params
+                    )
+                    if response['msg'] == 'success':
+                        result = result + response['data']['activityItemDataList']
+                        params['offset'] = params['offset'] + limit
+                        continue
+                    else:
+                        break
+        else:
+            return None
+
+        return result
