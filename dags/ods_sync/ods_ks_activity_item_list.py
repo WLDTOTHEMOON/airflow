@@ -10,7 +10,7 @@ SCHEMA = 'ods'
 TABLE = 'ods_ks_activity_item_list'
 
 
-@dag(schedule_interval='0 * * * *', start_date=pendulum.datetime(2023, 1, 1), catchup=False,
+@dag(schedule_interval='0 20 * * *', start_date=pendulum.datetime(2023, 1, 1), catchup=False,
 # @dag(schedule=None,
      default_args={'owner': 'Fang Yongchao'}, tags=['ods', 'sync', 'kuaishou'],
      max_active_tasks=4, max_active_runs=1)
