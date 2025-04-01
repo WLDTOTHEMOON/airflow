@@ -7,7 +7,8 @@ MYSQL_KEYWORDS = ['group']
 
 
 @dag(schedule_interval='0 * * * *', start_date=pendulum.datetime(2023, 1, 1), catchup=False,
-     default_args={'owner': 'Fang Yongchao'}, tags=['ods', 'sync', 'platform'])
+     default_args={'owner': 'Fang Yongchao'}, tags=['ods', 'sync', 'platform'],
+     max_active_tasks=4, max_active_runs=1)
 def platform():
     def generate_upsert_template(schema, table):
         import pandas as pd
@@ -33,11 +34,11 @@ def platform():
         '''
         return sql
 
-    def fetch_from_source(table, start_time, end_time):
+    def fetch_from_source(table, start_time, end_time, key_word='updated_at'):
         import pandas as pd
         from include.database.mysql import engine
         file_name = table + '-' + start_time + '-' + end_time + '.csv'
-        data = pd.read_sql(f"select * from {table} where updated_at between '{start_time}' and '{end_time}'", engine)
+        data = pd.read_sql(f"select * from {table} where {key_word} between '{start_time}' and '{end_time}'", engine)
         data.to_csv(file_name, index=False)
         logger.info(f'完成数据 {file_name} 获取, {len(data)} items')
         return file_name
@@ -135,11 +136,35 @@ def platform():
         sql = generate_upsert_template('ods', 'ods_pf_anchor_select_products')
         read_and_sync(path=path, sql=sql)
 
+    @task(retries=5, retry_delay=10)
+    def ods_pf_anchor_info(**kwargs):
+        begin_time = kwargs['data_interval_start']
+        end_time = kwargs['data_interval_end']
+        begin_time_fmt = begin_time.in_tz('Asia/Shanghai').format('YYYY-MM-DD HH:mm:ss')
+        end_time_fmt = end_time.in_tz('Asia/Shanghai').format('YYYY-MM-DD HH:mm:ss')
+        file_name = fetch_from_source(table='xlsd.anchor_info', start_time=begin_time_fmt, end_time=end_time_fmt)
+        path = write_to_cos(file_name=file_name, path='platform/anchor_info/')
+        sql = generate_upsert_template('ods', 'ods_pf_anchor_info')
+        read_and_sync(path=path, sql=sql)
+
+    @task(retries=5, retry_delay=10)
+    def ods_pf_account_info(**kwargs):
+        begin_time = kwargs['data_interval_start']
+        end_time = kwargs['data_interval_end']
+        begin_time_fmt = begin_time.in_tz('Asia/Shanghai').format('YYYY-MM-DD HH:mm:ss')
+        end_time_fmt = end_time.in_tz('Asia/Shanghai').format('YYYY-MM-DD HH:mm:ss')
+        file_name = fetch_from_source(table='xlsd.account_info', start_time=begin_time_fmt, end_time=end_time_fmt, key_word='update_at')
+        path = write_to_cos(file_name=file_name, path='platform/account_info/')
+        sql = generate_upsert_template('ods', 'ods_pf_account_info')
+        read_and_sync(path=path, sql=sql)
+
     ods_pf_links()
     ods_pf_suppliers()
     ods_pf_products()
     ods_pf_reviews()
     ods_pf_anchor_select_products()
+    ods_pf_anchor_info()
+    ods_pf_account_info()
 
 
 platform()
