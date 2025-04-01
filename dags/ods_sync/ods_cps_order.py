@@ -47,7 +47,7 @@ def ods_cps_order():
         '''
         return sql
 
-    @task
+    @task(retries=5, retry_delay=10)
     def get_open_id():
         from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
         sql = f'''
@@ -65,7 +65,7 @@ def ods_cps_order():
         ).execute({})
         return [each[0] for each in open_ids]
 
-    @task(trigger_rule='all_done')
+    @task(trigger_rule='all_done', retries=5, retry_delay=10)
     def get_token(open_id):  
         from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
         sql = f'''
@@ -86,7 +86,7 @@ def ods_cps_order():
             'updated_at': tokens[0][2]
         }
     
-    @task(trigger_rule='all_done')
+    @task(trigger_rule='all_done', retries=5, retry_delay=10)
     def update_token(tokens):
         from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
         from airflow.models import Variable
@@ -121,7 +121,7 @@ def ods_cps_order():
             ).execute({})
             return new_tokens
     
-    @task(trigger_rule='all_done')
+    @task(trigger_rule='all_done', retries=5, retry_delay=10)
     def fetch_write_data(tokens, **kwargs):
         from qcloud_cos import CosConfig, CosS3Client
         from airflow.models import Variable
@@ -150,7 +150,7 @@ def ods_cps_order():
             'path': path
         }
     
-    @task(trigger_rule='all_done')
+    @task(trigger_rule='all_done', retries=5, retry_delay=10)
     def read_sync_data(path):
         from qcloud_cos import CosConfig, CosS3Client
         from airflow.models import Variable

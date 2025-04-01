@@ -17,7 +17,7 @@ def feishu():
         else:
             return xlrd.xldate_as_datetime(timestamp, 0)
 
-    @task
+    @task(retries=5, retry_delay=10)
     def ods_gmv_target(**kwargs):
         from include.feishu.feishu_sheet import FeishuSheet
         from airflow.models import Variable
@@ -36,7 +36,7 @@ def feishu():
         raw_data.to_sql('ods_gmv_target', engine, if_exists='append', index=False, schema='ods')
         logger.info(f'数据更新完成 {len(raw_data)} items')
 
-    @task
+    @task(retries=5, retry_delay=10)
     def ods_fs_links(**kwargs):
         from include.feishu.feishu_sheet import FeishuSheet
         from airflow.models import Variable
@@ -72,7 +72,7 @@ def feishu():
         raw_data.to_sql('ods_fs_links', engine, if_exists='append', index=False, schema='ods')
         logger.info(f'数据更新完成 {len(raw_data)} items')
 
-    @task
+    @task(retries=5, retry_delay=10)
     def ods_slice_account(**kwargs):
         from include.feishu.feishu_sheet import FeishuSheet
         from airflow.models import Variable

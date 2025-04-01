@@ -80,7 +80,7 @@ def platform():
         logger.info(f'完成数据同步 {len(data)} items')
         return 1
     
-    @task
+    @task(retries=5, retry_delay=10)
     def ods_pf_links(**kwargs):
         begin_time = kwargs['data_interval_start']
         end_time = kwargs['data_interval_end']
@@ -91,7 +91,7 @@ def platform():
         sql = generate_upsert_template('ods', 'ods_pf_links')
         read_and_sync(path=path, sql=sql)
 
-    @task
+    @task(retries=5, retry_delay=10)
     def ods_pf_suppliers(**kwargs):
         begin_time = kwargs['data_interval_start']
         end_time = kwargs['data_interval_end']
@@ -102,7 +102,7 @@ def platform():
         sql = generate_upsert_template('ods', 'ods_pf_suppliers')
         read_and_sync(path=path, sql=sql)
 
-    @task
+    @task(retries=5, retry_delay=10)
     def ods_pf_products(**kwargs):
         begin_time = kwargs['data_interval_start']
         end_time = kwargs['data_interval_end']
@@ -113,7 +113,7 @@ def platform():
         sql = generate_upsert_template('ods', 'ods_pf_products')
         read_and_sync(path=path, sql=sql)
 
-    @task
+    @task(retries=5, retry_delay=10)
     def ods_pf_reviews(**kwargs):
         begin_time = kwargs['data_interval_start']
         end_time = kwargs['data_interval_end']
@@ -124,7 +124,7 @@ def platform():
         sql = generate_upsert_template('ods', 'ods_pf_reviews')
         read_and_sync(path=path, sql=sql)
 
-    @task
+    @task(retries=5, retry_delay=10)
     def ods_pf_anchor_select_products(**kwargs):
         begin_time = kwargs['data_interval_start']
         end_time = kwargs['data_interval_end']
