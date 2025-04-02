@@ -1,4 +1,4 @@
-insert into dwd.dwd_ks_activity_info
+insert into dim.dim_ks_activity_info
 select 
     activity_id
     ,activity_user_id

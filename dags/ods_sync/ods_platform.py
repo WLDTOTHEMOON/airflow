@@ -5,7 +5,7 @@ import pendulum
 
 logger = logging.getLogger(__name__)
 MYSQL_KEYWORDS = ['group']
-platform_dataset = Dataset('platform_dataset')
+ods_platform_dataset = Dataset('ods_platform_dataset')
 
 
 @dag(schedule_interval='0 * * * *', start_date=pendulum.datetime(2023, 1, 1), catchup=False,
@@ -160,7 +160,7 @@ def ods_platform():
         sql = generate_upsert_template('ods', 'ods_pf_account_info')
         read_and_sync(path=path, sql=sql)
 
-    @task(outlets=[platform_dataset])
+    @task(outlets=[ods_platform_dataset])
     def task_finished():
         logger.info(f'platform 相关数据ods更新完成')
 
