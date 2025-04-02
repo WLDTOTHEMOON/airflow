@@ -18,7 +18,7 @@ def ods_feishu():
             return xlrd.xldate_as_datetime(timestamp, 0)
 
     @task(retries=5, retry_delay=10)
-    def ods_gmv_target(**kwargs):
+    def ods_fs_gmv_target(**kwargs):
         from include.feishu.feishu_sheet import FeishuSheet
         from airflow.models import Variable
         from include.database.mysql import engine
@@ -32,8 +32,8 @@ def ods_feishu():
         raw_data['update_at'] = kwargs['ts']
         raw_data = raw_data.fillna(0)
         with engine.connect() as conn:
-            conn.execute(text('delete from ods.ods_gmv_target'))
-        raw_data.to_sql('ods_gmv_target', engine, if_exists='append', index=False, schema='ods')
+            conn.execute(text('delete from ods.ods_fs_gmv_target'))
+        raw_data.to_sql('ods_fs_gmv_target', engine, if_exists='append', index=False, schema='ods')
         logger.info(f'数据更新完成 {len(raw_data)} items')
 
     @task(retries=5, retry_delay=10)
@@ -73,7 +73,7 @@ def ods_feishu():
         logger.info(f'数据更新完成 {len(raw_data)} items')
 
     @task(retries=5, retry_delay=10)
-    def ods_slice_account(**kwargs):
+    def ods_fs_slice_account(**kwargs):
         from include.feishu.feishu_sheet import FeishuSheet
         from airflow.models import Variable
         from sqlalchemy import text
@@ -92,14 +92,14 @@ def ods_feishu():
         raw_data['update_at'] = kwargs['ts']
 
         with engine.connect() as conn:
-            conn.execute(text('delete from ods.ods_slice_account'), conn)
-        raw_data.to_sql('ods_slice_account', engine, if_exists='append', index=False, schema='ods')
+            conn.execute(text('delete from ods.ods_fs_slice_account'), conn)
+        raw_data.to_sql('ods_fs_slice_account', engine, if_exists='append', index=False, schema='ods')
         logger.info(f'数据更新完成 {len(raw_data)} items')
 
 
-    ods_gmv_target()
+    ods_fs_gmv_target() >> ods_fs_slice_account()
     ods_fs_links()
-    ods_slice_account()
+    
 
 
 ods_feishu()
