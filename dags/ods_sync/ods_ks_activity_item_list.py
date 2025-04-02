@@ -1,5 +1,6 @@
 from airflow.decorators import dag, task
 from airflow.models import Variable
+from airflow import Dataset
 import logging
 import pendulum
 
@@ -8,10 +9,11 @@ MYSQL_KEYWORDS = ['group']
 LEADER_OPEN_ID = Variable.get('leader_open_id')
 SCHEMA = 'ods'
 TABLE = 'ods_ks_activity_item_list'
+ods_activity_dataset = Dataset('ods_activity_dataset')
+
 
 
 @dag(schedule_interval='0 20 * * *', start_date=pendulum.datetime(2023, 1, 1), catchup=False,
-# @dag(schedule=None,
      default_args={'owner': 'Fang Yongchao'}, tags=['ods', 'sync', 'kuaishou'],
      max_active_tasks=4, max_active_runs=1)
 def ods_ks_activity_item_list():
@@ -115,6 +117,7 @@ def ods_ks_activity_item_list():
         where activity_status != 4
             or date(activity_end_time) >= '{begin_time_fmt}'
         order by activity_id desc
+        limit 10
         '''
         acticity_id_list = pd.read_sql(sql, engine).activity_id.to_list()
         return acticity_id_list
@@ -209,7 +212,7 @@ def ods_ks_activity_item_list():
             logger.info('数据为空，跳过同步')
             return 0
 
-    @task(trigger_rule='all_done', retries=5, retry_delay=10)
+    @task(trigger_rule='all_done', retries=5, retry_delay=10, outlets=[ods_activity_dataset])
     def summary(num):
         total = sum(num)
         logger.info(f'完成数据同步 {total} items')

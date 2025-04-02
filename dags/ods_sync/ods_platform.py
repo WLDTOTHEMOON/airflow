@@ -1,15 +1,17 @@
 from airflow.decorators import dag, task
+from airflow import Dataset
 import logging
 import pendulum
 
 logger = logging.getLogger(__name__)
 MYSQL_KEYWORDS = ['group']
+platform_dataset = Dataset('platform_dataset')
 
 
 @dag(schedule_interval='0 * * * *', start_date=pendulum.datetime(2023, 1, 1), catchup=False,
      default_args={'owner': 'Fang Yongchao'}, tags=['ods', 'sync', 'platform'],
      max_active_tasks=4, max_active_runs=1)
-def platform():
+def ods_platform():
     def generate_upsert_template(schema, table):
         import pandas as pd
         from include.database.mysql import engine
@@ -158,13 +160,14 @@ def platform():
         sql = generate_upsert_template('ods', 'ods_pf_account_info')
         read_and_sync(path=path, sql=sql)
 
-    ods_pf_links()
-    ods_pf_suppliers()
-    ods_pf_products()
-    ods_pf_reviews()
-    ods_pf_anchor_select_products()
-    ods_pf_anchor_info()
-    ods_pf_account_info()
+    @task(outlets=[platform_dataset])
+    def task_finished():
+        logger.info(f'platform 相关数据ods更新完成')
 
 
-platform()
+    ods_pf_links() >> ods_pf_suppliers()
+    ods_pf_products() >> ods_pf_reviews() >> ods_pf_anchor_select_products()
+    ods_pf_anchor_info() >> ods_pf_account_info() >> task_finished()
+
+
+ods_platform()
