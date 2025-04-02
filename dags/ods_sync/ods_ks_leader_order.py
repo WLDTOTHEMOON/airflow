@@ -1,5 +1,6 @@
 from airflow.decorators import dag, task
 from airflow.models import Variable
+from airflow import Dataset
 import logging
 import pendulum
 
@@ -8,7 +9,7 @@ MYSQL_KEYWORDS = ['group']
 LEADER_OPEN_ID = Variable.get('leader_open_id')
 SCHEMA = 'ods'
 TABLE = 'ods_ks_leader_order'
-
+ods_ks_leader_order_dataset = Dataset('ods_ks_leader_order_dataset')
 
 # @dag(schedule=None,
 @dag(schedule_interval='0 * * * *', start_date=pendulum.datetime(2023, 1, 1), catchup=False,
@@ -104,7 +105,7 @@ def ods_ks_leader_order():
             return new_tokens
 
     @task(retries=5, retry_delay=10)
-    def fetch_write_data(tokens, **kwargs):
+    def fetch_write_data(tokens, ti, **kwargs):
         from qcloud_cos import CosConfig, CosS3Client
         from airflow.models import Variable
         from include.kuaishou.ks_client import KsClient
@@ -112,16 +113,20 @@ def ods_ks_leader_order():
 
         begin_time = kwargs['data_interval_start']
         end_time = kwargs['data_interval_end']
+
+        if end_time.hour in [22, 8]:  
+            begin_time = begin_time.subtract(hours=20)
+        
         date_fmt = begin_time.in_tz('Asia/Shanghai').format('YYYYMMDD')
         begin_time_fmt = begin_time.in_tz('Asia/Shanghai').format('YYYYMMDDHHmmss')
         end_time_fmt = end_time.in_tz('Asia/Shanghai').format('YYYYMMDDHHmmss')
 
         ks_client = KsClient(**Variable.get('kuaishou', deserialize_json=True))
-        cos_config = Variable.get('cos', deserialize_json=True)
-        client=CosS3Client(CosConfig(SecretId=cos_config['secret_id'], SecretKey=cos_config['secret_key'], Region=cos_config['region']))
         raw_data = ks_client.get_leader_orders(access_token=tokens['access_token'], begin_time=begin_time, end_time=end_time)
 
         path = f'leader_order/{date_fmt}/{begin_time_fmt}_{end_time_fmt}.json'
+        cos_config = Variable.get('cos', deserialize_json=True)
+        client=CosS3Client(CosConfig(SecretId=cos_config['secret_id'], SecretKey=cos_config['secret_key'], Region=cos_config['region']))
         client.put_object(
             Bucket=cos_config['bucket'],
             Body=json.dumps(raw_data, indent=2),
@@ -195,11 +200,16 @@ def ods_ks_leader_order():
         logger.info(sql)
         with engine.connect() as conn:
             conn.execute(text(sql), processed_data)
-        logger.info(f'完成数据同步 {len(processed_data)} items')
+        return len(processed_data)
+    
+    @task(outlets=[ods_ks_leader_order_dataset])
+    def summary(num):
+        logger.info(f'完成数据同步 {num} items')
 
     tokens = get_token()
     new_tokens = update_token(tokens)
     path = fetch_write_data(new_tokens)
-    read_sync_data(path)
+    num = read_sync_data(path)
+    summary(num)
 
 ods_ks_leader_order()

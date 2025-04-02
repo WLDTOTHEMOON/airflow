@@ -1,5 +1,6 @@
 from airflow.decorators import dag, task
 from airflow.models import Variable
+from airflow import Dataset
 import logging
 import pendulum
 
@@ -8,6 +9,7 @@ MYSQL_KEYWORDS = ['group']
 LEADER_OPEN_ID = Variable.get('leader_open_id')
 SCHEMA = 'ods'
 TABLE = 'ods_ks_cps_order'
+ods_ks_cps_order_dataset = Dataset('ods_ks_cps_order_dataset')
 
 
 @dag(schedule_interval='0 * * * *', start_date=pendulum.datetime(2023, 1, 1), catchup=False,
@@ -122,24 +124,31 @@ def ods_ks_cps_order():
             return new_tokens
     
     @task(trigger_rule='all_done', retries=5, retry_delay=10)
-    def fetch_write_data(tokens, **kwargs):
+    def fetch_write_data(tokens, ti, **kwargs):
         from qcloud_cos import CosConfig, CosS3Client
         from airflow.models import Variable
         from include.kuaishou.ks_client import KsClient
         import json
-        ks_client = KsClient(**Variable.get('kuaishou', deserialize_json=True))
-        cos_config = Variable.get('cos', deserialize_json=True)
-        client=CosS3Client(CosConfig(SecretId=cos_config['secret_id'], SecretKey=cos_config['secret_key'], Region=cos_config['region']))
-
+        
         begin_time = kwargs['data_interval_start']
         end_time = kwargs['data_interval_end']
+        
+        if end_time.hour in [22, 8]:  
+            begin_time = begin_time.subtract(hours=20)
+
+        Variable.set('dwd_ks_cps_order_begin_time', begin_time.in_tz('Asia/Shanghai').format('YYYY-MM-DD HH:mm:ss'))
+        Variable.set('dwd_ks_cps_order_end_time', end_time.in_tz('Asia/Shanghai').format('YYYY-MM-DD HH:mm:ss'))
+
         date_fmt = begin_time.in_tz('Asia/Shanghai').format('YYYYMMDD')
         begin_time_fmt = begin_time.in_tz('Asia/Shanghai').format('YYYYMMDDHHmmss')
         end_time_fmt = end_time.in_tz('Asia/Shanghai').format('YYYYMMDDHHmmss')
 
+        ks_client = KsClient(**Variable.get('kuaishou', deserialize_json=True))
         raw_data = ks_client.get_cps_orders(access_token=tokens['access_token'], begin_time=begin_time, end_time=end_time)
         
         path = f'cps_order/{date_fmt}/{tokens['open_id']}/{begin_time_fmt}_{end_time_fmt}.json'
+        cos_config = Variable.get('cos', deserialize_json=True)
+        client=CosS3Client(CosConfig(SecretId=cos_config['secret_id'], SecretKey=cos_config['secret_key'], Region=cos_config['region']))
         client.put_object(
             Bucket=cos_config['bucket'],
             Body=json.dumps(raw_data, indent=2),
@@ -222,7 +231,7 @@ def ods_ks_cps_order():
             logger.info('数据为空，跳过同步')
             return 0
 
-    @task
+    @task(outlets=[ods_ks_cps_order_dataset])
     def summary(num):
         total = sum(num)
         logger.info(f'完成数据同步 {total} items')
