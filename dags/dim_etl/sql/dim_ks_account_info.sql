@@ -1,3 +1,5 @@
+delete from dim.dim_ks_account_info where 1 = 1;
+
 insert into dim.dim_ks_account_info (
     account_id, account_status, anchor_name, anchor_status, line, anchor_type,
     group_leader, specific_bd, specific_op, anchor_commission_rate, organization_commission_rate,
@@ -38,7 +40,7 @@ from (
         ,open_id
         ,status
         ,update_at
-    from ods.ods_ks_account_info
+    from ods.ods_pf_account_info
 ) src
 left join (
     select 
@@ -54,25 +56,25 @@ left join (
         ,status
         ,line
         ,updated_at
-    from ods.ods_ks_anchor_info
+    from ods.ods_pf_anchor_info
 ) info on src.anchor_id = info.anchor_id
 left join (
     select id, name
-    from ods.ods_platform_users opu
+    from ods.ods_pf_users
 ) an on info.anchor_id = an.id
 left join (
     select id, name
-    from ods.ods_platform_users opu
+    from ods.ods_pf_users
 ) gl on info.group_leader = gl.id
 left join (
     select id, name
-    from ods.ods_platform_users opu
+    from ods.ods_pf_users
 ) sb on info.specific_bd = sb.id
 left join (
     select id, name
-    from ods.ods_platform_users opu
+    from ods.ods_pf_users
 ) so on info.specific_op = so.id
 left join (
     select id, name
-    from ods.ods_platform_users opu
+    from ods.ods_pf_users
 ) ocb on info.other_commission_belong = ocb.id;
