@@ -160,13 +160,25 @@ def ods_platform():
         sql = generate_upsert_template('ods', 'ods_pf_account_info')
         read_and_sync(path=path, sql=sql)
 
+    @task(retries=5, retry_delay=10)
+    def ods_pf_users(**kwargs):
+        begin_time = kwargs['data_interval_start']
+        end_time = kwargs['data_interval_end']
+        begin_time_fmt = begin_time.in_tz('Asia/Shanghai').format('YYYY-MM-DD HH:mm:ss')
+        end_time_fmt = end_time.in_tz('Asia/Shanghai').format('YYYY-MM-DD HH:mm:ss')
+        file_name = fetch_from_source(table='xlsd.users', start_time=begin_time_fmt, end_time=end_time_fmt)
+        path = write_to_cos(file_name=file_name, path='platform/users/')
+        sql = generate_upsert_template('ods', 'ods_pf_users')
+        read_and_sync(path=path, sql=sql)
+
+
     @task(outlets=[ods_platform_dataset])
     def task_finished():
         logger.info(f'platform 相关数据ods更新完成')
 
 
-    ods_pf_links() >> ods_pf_suppliers()
-    ods_pf_products() >> ods_pf_reviews() >> ods_pf_anchor_select_products()
+    ods_pf_links() >> ods_pf_suppliers() >> ods_pf_users() >> \
+    ods_pf_products() >> ods_pf_reviews() >> ods_pf_anchor_select_products() >> \
     ods_pf_anchor_info() >> ods_pf_account_info() >> task_finished()
 
 
