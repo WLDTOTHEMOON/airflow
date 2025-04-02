@@ -117,6 +117,9 @@ def ods_ks_leader_order():
         if end_time.hour in [22, 8]:  
             begin_time = begin_time.subtract(hours=20)
         
+        Variable.set('dwd_ks_leader_order_begin_time', begin_time.in_tz('Asia/Shanghai').format('YYYY-MM-DD HH:mm:ss'))
+        Variable.set('dwd_ks_leader_order_end_time', end_time.in_tz('Asia/Shanghai').format('YYYY-MM-DD HH:mm:ss'))
+
         date_fmt = begin_time.in_tz('Asia/Shanghai').format('YYYYMMDD')
         begin_time_fmt = begin_time.in_tz('Asia/Shanghai').format('YYYYMMDDHHmmss')
         end_time_fmt = end_time.in_tz('Asia/Shanghai').format('YYYYMMDDHHmmss')
