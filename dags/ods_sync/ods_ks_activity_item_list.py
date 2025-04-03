@@ -117,7 +117,6 @@ def ods_ks_activity_item_list():
         where activity_status != 4
             or date(activity_end_time) >= '{begin_time_fmt}'
         order by activity_id desc
-        limit 10
         '''
         acticity_id_list = pd.read_sql(sql, engine).activity_id.to_list()
         return acticity_id_list

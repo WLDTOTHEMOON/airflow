@@ -6,7 +6,7 @@ logger = logging.getLogger(__name__)
 MYSQL_KEYWORDS = ['group']
 
 
-@dag(schedule_interval='0 * * * *', start_date=pendulum.datetime(2023, 1, 1), catchup=False,
+@dag(schedule_interval='0 */2 * * *', start_date=pendulum.datetime(2023, 1, 1), catchup=False,
      default_args={'owner': 'Fang Yongchao'}, tags=['ods', 'feishu', 'sync'])
 def ods_feishu():
     def excel_time_convert(timestamp):

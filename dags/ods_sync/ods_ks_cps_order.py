@@ -12,7 +12,7 @@ TABLE = 'ods_ks_cps_order'
 ods_ks_cps_order_dataset = Dataset('ods_ks_cps_order_dataset')
 
 
-@dag(schedule_interval='0 * * * *', start_date=pendulum.datetime(2023, 1, 1), catchup=False,
+@dag(schedule_interval='0 */2 * * *', start_date=pendulum.datetime(2023, 1, 1), catchup=False,
      default_args={'owner': 'Fang Yongchao'}, tags=['ods', 'sync', 'kuaishou'],
      max_active_tasks=3, max_active_runs=1)
 def ods_ks_cps_order():
@@ -133,7 +133,7 @@ def ods_ks_cps_order():
         begin_time = kwargs['data_interval_start']
         end_time = kwargs['data_interval_end']
         
-        if end_time.hour in [22, 8]:  
+        if end_time.in_tz('Asia/Shanghai').hour in [22, 8]:  
             begin_time = begin_time.subtract(hours=20)
 
         Variable.set('dwd_ks_cps_order_begin_time', begin_time.in_tz('Asia/Shanghai').format('YYYY-MM-DD HH:mm:ss'))

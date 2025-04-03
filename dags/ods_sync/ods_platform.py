@@ -8,7 +8,7 @@ MYSQL_KEYWORDS = ['group']
 ods_platform_dataset = Dataset('ods_platform_dataset')
 
 
-@dag(schedule_interval='0 * * * *', start_date=pendulum.datetime(2023, 1, 1), catchup=False,
+@dag(schedule_interval='0 */2 * * *', start_date=pendulum.datetime(2023, 1, 1), catchup=False,
      default_args={'owner': 'Fang Yongchao'}, tags=['ods', 'sync', 'platform'],
      max_active_tasks=4, max_active_runs=1)
 def ods_platform():
