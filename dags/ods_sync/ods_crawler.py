@@ -9,7 +9,7 @@ MYSQL_KEYWORDS = ['group']
 ods_crawler_dataset = Dataset('ods_crawler_dataset')
 
 
-@dag(schedule_interval='* */2 * * *', start_date=pendulum.datetime(2023, 1, 1), catchup=False,
+@dag(schedule_interval='0 */2 * * *', start_date=pendulum.datetime(2023, 1, 1), catchup=False,
      default_args={'owner': 'Fang Yongchao'}, tags=['ods', 'sync', 'crawler'])
 def ods_crawler():
     def generate_upsert_template(schema, table):
@@ -102,10 +102,11 @@ def ods_crawler():
         import pandas as pd
         path = 'leader_commission_income/'
         suffix = '.xlsx'
-        flag = get_flag(path)
+        # flag = get_flag(path)
+        flag = 1
         if flag:
             logger.info(f'数据更新，开始同步')
-            raw_data = read_data(path=path, suffix=suffix)
+            raw_data = read_data(path=path, suffix=suffix) 
             data = raw_data.rename(columns={
                 '达人ID': 'anchor_id',
                 '达人昵称': 'anchor_name',
@@ -138,6 +139,11 @@ def ods_crawler():
             })
             data = data.replace('', None)
             data = data.replace('-', None)
+
+            from airflow.models import Variable
+            Variable.set('dwd_ks_leader_commission_income_begin_time', data['order_create_time'].min())
+            Variable.set('dwd_ks_leader_commission_income_end_time', data['order_create_time'].max())
+
             data = data.where(pd.notna(data), None).to_dict(orient='records')
             sql = generate_upsert_template('ods', 'ods_crawler_leader_commission_income')
             if len(data) > 0:

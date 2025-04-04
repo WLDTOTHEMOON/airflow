@@ -31,7 +31,7 @@ from (
 ) src
 left join (
     select id, product_id
-    from ods.ods_platform_anchor_select_products opasp 
+    from ods.ods_pf_anchor_select_products
 ) anchor_sel on src.select_product_id = anchor_sel.id
 on duplicate key update
     user_id = values(user_id)
