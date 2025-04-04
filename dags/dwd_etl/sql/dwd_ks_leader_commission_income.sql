@@ -35,6 +35,7 @@ select
     ,order_trade_amount / 100 order_trade_amount
     ,case cps_order_status
         when 30 then '已付款'
+        when 40 then '已发货'
         when 50 then '已收货'
         when 60 then '已结算'
         when 80 then '已失效'
@@ -74,6 +75,7 @@ from (
         ,author_name
         ,estimated_income estimated_service_income
     from ods.ods_crawler_leader_commission_income
+    -- where order_create_time between %(begin_time)s and %(end_time)s
 ) src
 inner join (
     select *
