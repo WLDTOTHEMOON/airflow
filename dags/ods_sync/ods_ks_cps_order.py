@@ -124,7 +124,7 @@ def ods_ks_cps_order():
             return new_tokens
     
     @task(trigger_rule='all_done', retries=5, retry_delay=10)
-    def fetch_write_data(tokens, ti, **kwargs):
+    def fetch_write_data(tokens, **kwargs):
         from qcloud_cos import CosConfig, CosS3Client
         from airflow.models import Variable
         from include.kuaishou.ks_client import KsClient
@@ -136,8 +136,8 @@ def ods_ks_cps_order():
         if end_time.in_tz('Asia/Shanghai').hour in [22, 8]:  
             begin_time = begin_time.subtract(hours=20)
 
-        Variable.set('dwd_ks_cps_order_begin_time', begin_time.in_tz('Asia/Shanghai').format('YYYY-MM-DD HH:mm:ss'))
-        Variable.set('dwd_ks_cps_order_end_time', end_time.in_tz('Asia/Shanghai').format('YYYY-MM-DD HH:mm:ss'))
+        Variable.set('ods_ks_cps_order_begin_time', begin_time.in_tz('Asia/Shanghai').format('YYYY-MM-DD HH:mm:ss'))
+        Variable.set('ods_ks_cps_order_end_time', end_time.in_tz('Asia/Shanghai').format('YYYY-MM-DD HH:mm:ss'))
 
         date_fmt = begin_time.in_tz('Asia/Shanghai').format('YYYYMMDD')
         begin_time_fmt = begin_time.in_tz('Asia/Shanghai').format('YYYYMMDDHHmmss')

@@ -16,14 +16,14 @@ def dwd_ks_mcn_order():
     from airflow.models import Variable
     from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
 
-    begin_time = Variable.get('dwd_ks_leader_commission_income_begin_time')
-    end_time = Variable.get('dwd_ks_leader_commission_income_end_time')
+    # begin_time = Variable.get('dwd_ks_leader_commission_income_begin_time')
+    # end_time = Variable.get('dwd_ks_leader_commission_income_end_time')
     
     dwd_ks_mcn_order = SQLExecuteQueryOperator(
         task_id='dwd_ks_mcn_order',
         conn_id='mysql',
         sql='sql/dwd_ks_mcn_order.sql',
-        parameters={'begin_time': begin_time, 'end_time': end_time}
+        # parameters={'begin_time': begin_time, 'end_time': end_time}
     )
     
     dwd_ks_mcn_order

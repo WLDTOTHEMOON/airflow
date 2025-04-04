@@ -15,8 +15,8 @@ def dwd_ks_leader_order():
     from airflow.models import Variable
     from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
 
-    begin_time = Variable.get('dwd_ks_leader_order_begin_time')
-    end_time = Variable.get('dwd_ks_leader_order_end_time')
+    begin_time = Variable.get('ods_ks_leader_order_begin_time')
+    end_time = Variable.get('ods_ks_leader_order_end_time')
     
     dwd_ks_cps_order = SQLExecuteQueryOperator(
         task_id='dwd_ks_leader_order',
