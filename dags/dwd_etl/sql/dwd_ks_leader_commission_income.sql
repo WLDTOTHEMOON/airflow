@@ -75,7 +75,7 @@ from (
         ,author_name
         ,estimated_income estimated_service_income
     from ods.ods_crawler_leader_commission_income
-    -- where order_create_time between %(begin_time)s and %(end_time)s
+    where order_create_time >= (select min(order_create_time) from ods.ods_ks_cps_order where update_time between %(begin_time)s and %(end_time)s)
 ) src
 inner join (
     select *

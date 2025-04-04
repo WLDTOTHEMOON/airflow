@@ -48,6 +48,7 @@ select
 from (
     select o_id
     from ods.ods_crawler_recreation
+    where order_create_time >= (select min(order_create_time) from ods.ods_ks_cps_order where update_time between %(begin_time)s and %(end_time)s)
 ) src
 inner join (
     select *

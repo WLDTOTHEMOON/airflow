@@ -23,6 +23,18 @@ def dwd_platform():
         sql='sql/dwd_pf_users.sql'
     )
 
-    dwd_pf_users >> dwd_pf_links
+    dwd_pf_suppliers = SQLExecuteQueryOperator(
+        task_id='dwd_pf_suppliers',
+        conn_id='mysql',
+        sql='sql/dwd_pf_suppliers.sql'
+    )
+
+    dwd_pf_suppliers_belong = SQLExecuteQueryOperator(
+        task_id='dwd_pf_suppliers_belong',
+        conn_id='mysql',
+        sql='sql/dwd_pf_suppliers_belong.sql'
+    )
+
+    dwd_pf_users >> dwd_pf_links >> dwd_pf_suppliers >> dwd_pf_suppliers_belong
 
 dwd_platform()
