@@ -102,8 +102,8 @@ def ods_crawler():
         import pandas as pd
         path = 'leader_commission_income/'
         suffix = '.xlsx'
-        # flag = get_flag(path)
-        flag = 1
+        flag = get_flag(path)
+        # flag = 1
         if flag:
             logger.info(f'数据更新，开始同步')
             raw_data = read_data(path=path, suffix=suffix) 
