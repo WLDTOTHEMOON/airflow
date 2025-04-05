@@ -11,7 +11,7 @@ SCHEMA = 'ods'
 TABLE = 'ods_ks_leader_order'
 ods_ks_leader_order_dataset = Dataset('ods_ks_leader_order_dataset')
 
-# @dag(schedule=None,
+
 @dag(schedule_interval='0 */2 * * *', start_date=pendulum.datetime(2023, 1, 1), catchup=False,
      default_args={'owner': 'Fang Yongchao'}, tags=['ods', 'sync', 'kuaishou'],
      max_active_tasks=3, max_active_runs=1)
@@ -105,7 +105,7 @@ def ods_ks_leader_order():
             return new_tokens
 
     @task(retries=5, retry_delay=10)
-    def fetch_write_data(tokens, ti, **kwargs):
+    def fetch_write_data(tokens, **kwargs):
         from qcloud_cos import CosConfig, CosS3Client
         from airflow.models import Variable
         from include.kuaishou.ks_client import KsClient
@@ -116,6 +116,8 @@ def ods_ks_leader_order():
 
         if end_time.in_tz('Asia/Shanghai').hour in [22, 8]:  
             begin_time = begin_time.subtract(hours=20)
+        else:
+            begin_time = begin_time.substract(hour=2)
         
         Variable.set('ods_ks_leader_order_begin_time', begin_time.in_tz('Asia/Shanghai').format('YYYY-MM-DD HH:mm:ss'))
         Variable.set('ods_ks_leader_order_end_time', end_time.in_tz('Asia/Shanghai').format('YYYY-MM-DD HH:mm:ss'))
