@@ -49,7 +49,7 @@ def ods_ks_leader_order():
         '''
         return sql
 
-    @task(retries=5, retry_delay=10)
+    @task(retries=10, retry_delay=10)
     def get_token():
         from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
         sql = f'''
@@ -69,7 +69,7 @@ def ods_ks_leader_order():
             'updated_at': tokens[0][2]
         }
     
-    @task(retries=5, retry_delay=10)
+    @task(retries=10, retry_delay=10)
     def update_token(tokens):
         from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
         from airflow.models import Variable
@@ -104,7 +104,7 @@ def ods_ks_leader_order():
             ).execute({})
             return new_tokens
 
-    @task(retries=5, retry_delay=10)
+    @task(retries=10, retry_delay=10)
     def fetch_write_data(tokens, **kwargs):
         from qcloud_cos import CosConfig, CosS3Client
         from airflow.models import Variable
@@ -117,7 +117,7 @@ def ods_ks_leader_order():
         if end_time.in_tz('Asia/Shanghai').hour in [22, 8]:  
             begin_time = begin_time.subtract(hours=20)
         else:
-            begin_time = begin_time.substract(hour=2)
+            begin_time = begin_time.subtract(hour=2)
         
         Variable.set('ods_ks_leader_order_begin_time', begin_time.in_tz('Asia/Shanghai').format('YYYY-MM-DD HH:mm:ss'))
         Variable.set('ods_ks_leader_order_end_time', end_time.in_tz('Asia/Shanghai').format('YYYY-MM-DD HH:mm:ss'))
@@ -139,7 +139,7 @@ def ods_ks_leader_order():
         )
         return path
 
-    @task(retries=5, retry_delay=10)
+    @task(retries=10, retry_delay=10)
     def read_sync_data(path):
         from qcloud_cos import CosConfig, CosS3Client
         from airflow.models import Variable
