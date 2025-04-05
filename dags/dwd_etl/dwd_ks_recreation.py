@@ -5,11 +5,9 @@ import pendulum
 
 logger = logging.getLogger(__name__)
 ods_crawler_dataset = Dataset('ods_crawler_dataset')
-ods_ks_cps_order_dataset = Dataset('ods_ks_cps_order_dataset')
-ods_ks_leader_order_dataset = Dataset('ods_ks_leader_order_dataset')
 
 
-@dag(schedule=[ods_crawler_dataset, ods_ks_cps_order_dataset, ods_ks_leader_order_dataset], start_date=pendulum.datetime(2023, 1, 1), catchup=False,
+@dag(schedule=[ods_crawler_dataset], start_date=pendulum.datetime(2023, 1, 1), catchup=False,
      default_args={'owner': 'Fang Yongchao'}, tags=['dwd', 'etl'],
      max_active_runs=1)
 def dwd_ks_recreation():
