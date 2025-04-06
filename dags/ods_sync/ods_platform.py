@@ -10,7 +10,7 @@ ods_platform_dataset = Dataset('ods_platform_dataset')
 
 @dag(schedule_interval='0 */2 * * *', start_date=pendulum.datetime(2023, 1, 1), catchup=False,
      default_args={'owner': 'Fang Yongchao'}, tags=['ods', 'sync', 'platform'],
-     max_active_tasks=4, max_active_runs=1)
+     max_active_tasks=3, max_active_runs=1)
 def ods_platform():
     def generate_upsert_template(schema, table):
         import pandas as pd
@@ -185,14 +185,21 @@ def ods_platform():
 
 
 
-    @task(outlets=[ods_platform_dataset])
-    def task_finished():
-        logger.info(f'platform 相关数据ods更新完成')
+    @task(trigger_rule='all_done', outlets=[ods_platform_dataset])
+    def task_finished(**kwargs):
+        from airflow.models import Variable
+        begin_time = kwargs['data_interval_start']
+        end_time = kwargs['data_interval_end']
+        begin_time_fmt = begin_time.in_tz('Asia/Shanghai').format('YYYY-MM-DD HH:mm:ss')
+        end_time_fmt = end_time.in_tz('Asia/Shanghai').format('YYYY-MM-DD HH:mm:ss')
+
+        Variable.set('ods_platform_begin_time', begin_time_fmt)
+        Variable.set('ods_platform_end_time', end_time_fmt)
+        logger.info(f'platform 相关数据ods更新完成 From {begin_time_fmt} to {end_time_fmt}')
 
 
-    ods_pf_links() >> ods_pf_suppliers() >> ods_pf_users() >> \
-    ods_pf_products() >> ods_pf_reviews() >> ods_pf_anchor_select_products() >> \
-    ods_pf_anchor_info() >> ods_pf_account_info() >> ods_pf_handover() >> \
+    [ods_pf_links(), ods_pf_suppliers(), ods_pf_users(), ods_pf_products(), ods_pf_reviews(), 
+    ods_pf_anchor_select_products(), ods_pf_anchor_info(), ods_pf_account_info(), ods_pf_handover()] >> \
     task_finished()
 
 

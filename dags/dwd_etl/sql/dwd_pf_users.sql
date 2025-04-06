@@ -17,6 +17,7 @@ select
 from (
     select *
     from ods.ods_pf_users
+    where updated_at between %(begin_time)s and %(end_time)s
 ) src
 on duplicate key update
     name = values(name)

@@ -10,7 +10,8 @@ ods_crawler_dataset = Dataset('ods_crawler_dataset')
 
 
 @dag(schedule_interval='0 */2 * * *', start_date=pendulum.datetime(2023, 1, 1), catchup=False,
-     default_args={'owner': 'Fang Yongchao'}, tags=['ods', 'sync', 'crawler'])
+     default_args={'owner': 'Fang Yongchao'}, tags=['ods', 'sync', 'crawler'],
+     max_active_tasks=3, max_active_runs=1)
 def ods_crawler():
     def generate_upsert_template(schema, table):
         import pandas as pd
@@ -95,7 +96,7 @@ def ods_crawler():
         response = client.list_objects(Bucket=cos_config['bucket'], Prefix=path, Delimiter='/')
         return [each['Prefix'] for each in response['CommonPrefixes']]
 
-    @task
+    @task(retries=5, retry_delay=10)
     def ods_crawler_leader_commission_income():
         from include.database.mysql import engine
         from sqlalchemy import text
@@ -103,7 +104,6 @@ def ods_crawler():
         path = 'leader_commission_income/'
         suffix = '.xlsx'
         flag = get_flag(path)
-        # flag = 1
         if flag:
             logger.info(f'数据更新，开始同步')
             raw_data = read_data(path=path, suffix=suffix) 
@@ -139,11 +139,6 @@ def ods_crawler():
             })
             data = data.replace('', None)
             data = data.replace('-', None)
-
-            from airflow.models import Variable
-            Variable.set('dwd_ks_leader_commission_income_begin_time', data['order_create_time'].min())
-            Variable.set('dwd_ks_leader_commission_income_end_time', data['order_create_time'].max())
-
             data = data.where(pd.notna(data), None).to_dict(orient='records')
             sql = generate_upsert_template('ods', 'ods_crawler_leader_commission_income')
             if len(data) > 0:
@@ -154,7 +149,7 @@ def ods_crawler():
         else:
             logger.info(f'数据未更新，结束任务')
     
-    @task
+    @task(retries=5, retry_delay=10)
     def ods_crawler_recreation():
         from include.database.mysql import engine
         from sqlalchemy import text
@@ -210,7 +205,7 @@ def ods_crawler():
             else:
                 logger.info(f'数据未更新，结束任务')
 
-    @task
+    @task(retries=5, retry_delay=10)
     def ods_crawler_mcn_order():
         from include.database.mysql import engine
         from sqlalchemy import text
@@ -230,11 +225,11 @@ def ods_crawler():
         else:
             logger.info(f'数据未更新，结束任务')
 
-    @task(outlets=[ods_crawler_dataset])
+    @task(trigger_rule='all_done', outlets=[ods_crawler_dataset])
     def task_finished():
         logger.info(f'platform 相关数据ods更新完成')
 
-    ods_crawler_leader_commission_income() >> ods_crawler_recreation() >> ods_crawler_mcn_order() >> \
+    [ods_crawler_leader_commission_income(), ods_crawler_recreation(), ods_crawler_mcn_order()] >> \
     task_finished()
 
 ods_crawler()

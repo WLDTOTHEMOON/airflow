@@ -28,6 +28,7 @@ from (
         ,updated_at 
         ,created_at 
     from ods.ods_platform_links opl 
+    where updated_at between %(begin_time)s and %(end_time)s
 ) src
 left join (
     select id, product_id

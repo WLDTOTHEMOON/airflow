@@ -65,6 +65,7 @@ from (
         ,updated_at 
         ,created_at 
     from ods.ods_pf_suppliers
+    where updated_at between %(begin_time)s and %(end_time)s
 ) src
 left join (
     select id, name, mobile, status
