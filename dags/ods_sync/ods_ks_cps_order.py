@@ -49,6 +49,21 @@ def ods_ks_cps_order():
         '''
         return sql
 
+    @task
+    def get_period(**kwargs):
+        begin_time = kwargs['data_interval_start']
+        end_time = kwargs['data_interval_end']
+        
+        if end_time.in_tz('Asia/Shanghai').hour in [22, 8]:  
+            begin_time = begin_time.subtract(hours=20)
+        else:
+            begin_time = begin_time.subtract(hours=2)
+        return {
+            'begin_time': begin_time.in_tz('Asia/Shanghai'),
+            'end_time': end_time.in_tz('Asia/Shanghai')
+        }
+
+
     @task(retries=10, retry_delay=10)
     def get_open_id():
         from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
@@ -124,22 +139,14 @@ def ods_ks_cps_order():
             return new_tokens
     
     @task(trigger_rule='all_done', retries=10, retry_delay=10)
-    def fetch_write_data(tokens, **kwargs):
+    def fetch_write_data(tokens, period):
         from qcloud_cos import CosConfig, CosS3Client
         from airflow.models import Variable
         from include.kuaishou.ks_client import KsClient
         import json
         
-        begin_time = kwargs['data_interval_start']
-        end_time = kwargs['data_interval_end']
-        
-        if end_time.in_tz('Asia/Shanghai').hour in [22, 8]:  
-            begin_time = begin_time.subtract(hours=20)
-        else:
-            begin_time = begin_time.subtract(hours=2)
-
-        Variable.set('ods_ks_cps_order_begin_time', begin_time.in_tz('Asia/Shanghai').format('YYYY-MM-DD HH:mm:ss'))
-        Variable.set('ods_ks_cps_order_end_time', end_time.in_tz('Asia/Shanghai').format('YYYY-MM-DD HH:mm:ss'))
+        begin_time = period['begin_time']
+        end_time = period['end_time']
 
         date_fmt = begin_time.in_tz('Asia/Shanghai').format('YYYYMMDD')
         begin_time_fmt = begin_time.in_tz('Asia/Shanghai').format('YYYYMMDDHHmmss')
@@ -234,16 +241,23 @@ def ods_ks_cps_order():
             return 0
 
     @task(trigger_rule='all_done', outlets=[ods_ks_cps_order_dataset])
-    def summary(num):
+    def summary(num, period):
+        from airflow.models import Variable
         total = sum(num)
+        begin_time = period['begin_time'].in_tz('Asia/Shanghai').format('YYYY-MM-DD HH:mm:ss')
+        end_time = period['end_time'].in_tz('Asia/Shanghai').format('YYYY-MM-DD HH:mm:ss')
+        Variable.set('ods_ks_cps_order_begin_time', begin_time)
+        Variable.set('ods_ks_cps_order_end_time', end_time)
+        logger.info(f'写入数据范围 From {begin_time} to {end_time}')
         logger.info(f'完成数据同步 {total} items')
 
+    period = get_period()
     open_ids = get_open_id()
     tokens = get_token.expand(open_id=open_ids)
     new_tokens = update_token.expand(tokens=tokens)
-    path = fetch_write_data.expand(tokens=new_tokens)
+    path = fetch_write_data.partial(period=period).expand(tokens=new_tokens)
     num = read_sync_data.expand(path=path)
-    summary(num)
+    summary(num, period)
 
 
 ods_ks_cps_order()
