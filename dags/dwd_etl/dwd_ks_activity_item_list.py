@@ -19,7 +19,8 @@ def dwd_ks_activity_item_list():
         task_id='dwd_ks_activity_item_list',
         conn_id='mysql',
         sql='sql/dwd_ks_activity_item_list.sql',
-        default_args=default_args
+        default_args=default_args,
+        outlets=[Dataset('mysql://dwd.dwd_ks_activity_item_list')]
     )
     
     dwd_ks_activity_item_list
