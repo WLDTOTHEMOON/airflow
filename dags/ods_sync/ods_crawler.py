@@ -96,7 +96,7 @@ def ods_crawler():
         response = client.list_objects(Bucket=cos_config['bucket'], Prefix=path, Delimiter='/')
         return [each['Prefix'] for each in response['CommonPrefixes']]
 
-    @task(retries=5, retry_delay=10)
+    @task(retries=5, retry_delay=10, outlets=[Dataset('mysql://ods.ods_crawler_leader_commission_income')])
     def ods_crawler_leader_commission_income():
         from include.database.mysql import engine
         from sqlalchemy import text
@@ -149,7 +149,7 @@ def ods_crawler():
         else:
             logger.info(f'数据未更新，结束任务')
     
-    @task(retries=5, retry_delay=10)
+    @task(retries=5, retry_delay=10, outlets=[Dataset('mysql://ods.ods_crawler_recreation')])
     def ods_crawler_recreation():
         from include.database.mysql import engine
         from sqlalchemy import text
@@ -205,7 +205,7 @@ def ods_crawler():
             else:
                 logger.info(f'数据未更新，结束任务')
 
-    @task(retries=5, retry_delay=10)
+    @task(retries=5, retry_delay=10, outlets=[Dataset('mysql://ods.ods_crawler_mcn_order')])
     def ods_crawler_mcn_order():
         from include.database.mysql import engine
         from sqlalchemy import text
@@ -225,11 +225,8 @@ def ods_crawler():
         else:
             logger.info(f'数据未更新，结束任务')
 
-    @task(trigger_rule='all_done', outlets=[ods_crawler_dataset])
-    def task_finished():
-        logger.info(f'platform 相关数据ods更新完成')
-
-    [ods_crawler_leader_commission_income(), ods_crawler_recreation(), ods_crawler_mcn_order()] >> \
-    task_finished()
+    ods_crawler_leader_commission_income() 
+    ods_crawler_recreation()
+    ods_crawler_mcn_order()
 
 ods_crawler()

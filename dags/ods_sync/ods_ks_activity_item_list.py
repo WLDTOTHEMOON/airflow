@@ -9,13 +9,11 @@ MYSQL_KEYWORDS = ['group']
 LEADER_OPEN_ID = Variable.get('leader_open_id')
 SCHEMA = 'ods'
 TABLE = 'ods_ks_activity_item_list'
-ods_activity_dataset = Dataset('ods_activity_dataset')
 
 
-
-@dag(schedule_interval='0 20 * * *', start_date=pendulum.datetime(2023, 1, 1), catchup=False,
-     default_args={'owner': 'Fang Yongchao'}, tags=['ods', 'sync', 'kuaishou'],
-     max_active_tasks=4, max_active_runs=1)
+@dag(schedule_interval=[Dataset('mysql://ods.ods_ks_activity_info')],
+     start_date=pendulum.datetime(2023, 1, 1), catchup=False,
+     default_args={'owner': 'Fang Yongchao'}, tags=['ods', 'sync', 'kuaishou'], max_active_tasks=3, max_active_runs=1)
 def ods_ks_activity_item_list():
     def timestamp2datetime(timestamp):
         try:
@@ -211,21 +209,11 @@ def ods_ks_activity_item_list():
             logger.info('数据为空，跳过同步')
             return 0
 
-    @task(trigger_rule='all_done', retries=10, retry_delay=10, outlets=[ods_activity_dataset])
+    @task(trigger_rule='all_done', retries=10, retry_delay=10, outlets=[Dataset('mysql://ods.ods_ks_activity_item_list')])
     def summary(num):
         total = sum(num)
         logger.info(f'完成数据同步 {total} items')
 
-    from airflow.sensors.external_task import ExternalTaskSensor
-    marker = ExternalTaskSensor(
-        task_id='wait_for_activity_info_finish',
-        external_dag_id='ods_ks_activity_info',
-        external_task_id='activity_info_finished',
-        mode='poke',
-        timeout=600,
-        poke_interval=30,
-        execution_delta=pendulum.duration(hours=0)
-    )
 
     tokens = get_token()
     new_tokens = update_token(tokens=tokens)
@@ -234,6 +222,5 @@ def ods_ks_activity_item_list():
     num = read_sync_data.expand(path=path)
     summary(num)
 
-    marker >> activity_id_list
 
 ods_ks_activity_item_list()

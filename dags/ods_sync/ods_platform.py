@@ -5,7 +5,6 @@ import pendulum
 
 logger = logging.getLogger(__name__)
 MYSQL_KEYWORDS = ['group']
-ods_platform_dataset = Dataset('ods_platform_dataset')
 
 
 @dag(schedule_interval='0 */2 * * *', start_date=pendulum.datetime(2023, 1, 1), catchup=False,
@@ -83,7 +82,7 @@ def ods_platform():
         logger.info(f'完成数据同步 {len(data)} items')
         return 1
     
-    @task(retries=5, retry_delay=10)
+    @task(retries=5, retry_delay=10, outlets=[Dataset('mysql://ods.ods_pf_links')])
     def ods_pf_links(**kwargs):
         begin_time = kwargs['data_interval_start']
         end_time = kwargs['data_interval_end']
@@ -94,7 +93,7 @@ def ods_platform():
         sql = generate_upsert_template('ods', 'ods_pf_links')
         read_and_sync(path=path, sql=sql)
 
-    @task(retries=5, retry_delay=10)
+    @task(retries=5, retry_delay=10, outlets=[Dataset('mysql://ods.ods_pf_suppliers')])
     def ods_pf_suppliers(**kwargs):
         begin_time = kwargs['data_interval_start']
         end_time = kwargs['data_interval_end']
@@ -105,7 +104,7 @@ def ods_platform():
         sql = generate_upsert_template('ods', 'ods_pf_suppliers')
         read_and_sync(path=path, sql=sql)
 
-    @task(retries=5, retry_delay=10)
+    @task(retries=5, retry_delay=10, outlets=[Dataset('mysql://ods.ods_pf_products')])
     def ods_pf_products(**kwargs):
         begin_time = kwargs['data_interval_start']
         end_time = kwargs['data_interval_end']
@@ -116,7 +115,7 @@ def ods_platform():
         sql = generate_upsert_template('ods', 'ods_pf_products')
         read_and_sync(path=path, sql=sql)
 
-    @task(retries=5, retry_delay=10)
+    @task(retries=5, retry_delay=10, outlets=[Dataset('mysql://ods.ods_pf_reviews')])
     def ods_pf_reviews(**kwargs):
         begin_time = kwargs['data_interval_start']
         end_time = kwargs['data_interval_end']
@@ -127,7 +126,7 @@ def ods_platform():
         sql = generate_upsert_template('ods', 'ods_pf_reviews')
         read_and_sync(path=path, sql=sql)
 
-    @task(retries=5, retry_delay=10)
+    @task(retries=5, retry_delay=10, outlets=[Dataset('mysql://ods.ods_pf_anchor_select_products')])
     def ods_pf_anchor_select_products(**kwargs):
         begin_time = kwargs['data_interval_start']
         end_time = kwargs['data_interval_end']
@@ -138,7 +137,7 @@ def ods_platform():
         sql = generate_upsert_template('ods', 'ods_pf_anchor_select_products')
         read_and_sync(path=path, sql=sql)
 
-    @task(retries=5, retry_delay=10)
+    @task(retries=5, retry_delay=10, outlets=[Dataset('mysql://ods.ods_pf_anchor_info')])
     def ods_pf_anchor_info(**kwargs):
         begin_time = kwargs['data_interval_start']
         end_time = kwargs['data_interval_end']
@@ -149,7 +148,7 @@ def ods_platform():
         sql = generate_upsert_template('ods', 'ods_pf_anchor_info')
         read_and_sync(path=path, sql=sql)
 
-    @task(retries=5, retry_delay=10)
+    @task(retries=5, retry_delay=10, outlets=[Dataset('mysql://ods.ods_pf_account_info')])
     def ods_pf_account_info(**kwargs):
         begin_time = kwargs['data_interval_start']
         end_time = kwargs['data_interval_end']
@@ -160,7 +159,7 @@ def ods_platform():
         sql = generate_upsert_template('ods', 'ods_pf_account_info')
         read_and_sync(path=path, sql=sql)
 
-    @task(retries=5, retry_delay=10)
+    @task(retries=5, retry_delay=10, outlets=[Dataset('mysql://ods.ods_pf_users')])
     def ods_pf_users(**kwargs):
         begin_time = kwargs['data_interval_start']
         end_time = kwargs['data_interval_end']
@@ -172,7 +171,7 @@ def ods_platform():
         read_and_sync(path=path, sql=sql)
 
 
-    @task(retries=5, retry_delay=10)
+    @task(retries=5, retry_delay=10, outlets=[Dataset('mysql://ods.ods_pf_handover')])
     def ods_pf_handover(**kwargs):
         begin_time = kwargs['data_interval_start']
         end_time = kwargs['data_interval_end']
@@ -185,8 +184,8 @@ def ods_platform():
 
 
 
-    @task(trigger_rule='all_done', outlets=[ods_platform_dataset])
-    def task_finished(**kwargs):
+    @task(trigger_rule='all_done')
+    def summary(**kwargs):
         from airflow.models import Variable
         begin_time = kwargs['data_interval_start']
         end_time = kwargs['data_interval_end']
@@ -200,7 +199,7 @@ def ods_platform():
 
     [ods_pf_links(), ods_pf_suppliers(), ods_pf_users(), ods_pf_products(), ods_pf_reviews(), 
     ods_pf_anchor_select_products(), ods_pf_anchor_info(), ods_pf_account_info(), ods_pf_handover()] >> \
-    task_finished()
+    summary()
 
 
 ods_platform()

@@ -4,15 +4,15 @@ import pendulum
 import logging
 
 logger = logging.getLogger(__name__)
-ods_activity_dataset = Dataset('ods_activity_dataset')
 default_args = {
     'retries': 5, 
     'retry_delay': 10
 }
 
 
-@dag(schedule=[ods_activity_dataset], start_date=pendulum.datetime(2023, 1, 1), catchup=False,
-     default_args={'owner': 'Fang yongchao'}, tags=['dim', 'etl'])
+@dag(schedule=[Dataset('mysql://ods.ods_ks_activity_item_list')],
+     start_date=pendulum.datetime(2023, 1, 1), catchup=False,
+     default_args={'owner': 'Fang yongchao'}, tags=['dim', 'etl'], max_active_runs=1)
 def dim_ks_activity_info():
     from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
     dim_ks_activity_info = SQLExecuteQueryOperator(

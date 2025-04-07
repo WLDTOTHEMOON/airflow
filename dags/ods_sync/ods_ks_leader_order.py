@@ -9,7 +9,6 @@ MYSQL_KEYWORDS = ['group']
 LEADER_OPEN_ID = Variable.get('leader_open_id')
 SCHEMA = 'ods'
 TABLE = 'ods_ks_leader_order'
-ods_ks_leader_order_dataset = Dataset('ods_ks_leader_order_dataset')
 
 
 @dag(schedule_interval='0 */2 * * *', start_date=pendulum.datetime(2023, 1, 1), catchup=False,
@@ -207,7 +206,7 @@ def ods_ks_leader_order():
             conn.execute(text(sql), processed_data)
         return len(processed_data)
     
-    @task(outlets=[ods_ks_leader_order_dataset])
+    @task(outlets=[Dataset('mysql://ods.ods_ks_leader_order')])
     def summary(num):
         logger.info(f'完成数据同步 {num} items')
 

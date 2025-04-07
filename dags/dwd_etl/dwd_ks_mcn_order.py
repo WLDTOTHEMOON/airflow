@@ -4,12 +4,11 @@ import logging
 import pendulum
 
 logger = logging.getLogger(__name__)
-ods_crawler_dataset = Dataset('ods_crawler_dataset')
 
 
-@dag(schedule=[ods_crawler_dataset], start_date=pendulum.datetime(2023, 1, 1), catchup=False,
-     default_args={'owner': 'Fang Yongchao'}, tags=['dwd', 'etl'],
-     max_active_runs=1)
+@dag(schedule=[Dataset('mysql://ods.ods_crawler_mcn_order')],
+     start_date=pendulum.datetime(2023, 1, 1), catchup=False,
+     default_args={'owner': 'Fang Yongchao'}, tags=['dwd', 'etl'], max_active_runs=1)
 def dwd_ks_mcn_order():
     from airflow.models import Variable
     from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator

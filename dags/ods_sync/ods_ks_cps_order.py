@@ -9,7 +9,6 @@ MYSQL_KEYWORDS = ['group']
 LEADER_OPEN_ID = Variable.get('leader_open_id')
 SCHEMA = 'ods'
 TABLE = 'ods_ks_cps_order'
-ods_ks_cps_order_dataset = Dataset('ods_ks_cps_order_dataset')
 
 
 @dag(schedule_interval='0 */2 * * *', start_date=pendulum.datetime(2023, 1, 1), catchup=False,
@@ -240,7 +239,7 @@ def ods_ks_cps_order():
             logger.info('数据为空，跳过同步')
             return 0
 
-    @task(trigger_rule='all_done', outlets=[ods_ks_cps_order_dataset])
+    @task(trigger_rule='all_done', outlets=[Dataset('mysql://ods.ods_ks_cps_order')])
     def summary(num, period):
         from airflow.models import Variable
         total = sum(num)

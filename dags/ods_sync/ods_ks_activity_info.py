@@ -1,5 +1,6 @@
 from airflow.decorators import dag, task
 from airflow.models import Variable
+from airflow import Dataset
 import logging
 import pendulum
 
@@ -127,7 +128,7 @@ def ods_ks_activity_info():
         )
         return path
 
-    @task(retries=5, retry_delay=10)
+    @task(retries=5, retry_delay=10, outlets=[Dataset('mysql://ods.ods_ks_activity_info')])
     def read_sync_data(path):
         from qcloud_cos import CosConfig, CosS3Client
         from airflow.models import Variable
@@ -177,18 +178,11 @@ def ods_ks_activity_info():
         with engine.connect() as conn:
             conn.execute(text(sql), processed_data)
         logger.info(f'完成数据同步 {len(processed_data)} items')
-    
-    from airflow.sensors.external_task import ExternalTaskMarker
-    marker = ExternalTaskMarker(
-        task_id='activity_info_finished',
-        external_dag_id='ods_ks_activity_item_list',
-        external_task_id='get_activity_list'
-    )
 
     tokens = get_token()
     new_tokens = update_token(tokens=tokens)
     path = fetch_write_data(tokens=new_tokens)
-    read_sync_data(path) >> marker
+    read_sync_data(path)
 
     
 

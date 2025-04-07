@@ -1,4 +1,5 @@
 from airflow.decorators import dag, task
+from airflow import Dataset
 import logging
 import pendulum
 
@@ -17,7 +18,7 @@ def ods_feishu():
         else:
             return xlrd.xldate_as_datetime(timestamp, 0)
 
-    @task(retries=5, retry_delay=10)
+    @task(retries=5, retry_delay=10, outlets=[Dataset('mysql://ods.ods_fs_gmv_target')])
     def ods_fs_gmv_target(**kwargs):
         from include.feishu.feishu_sheet import FeishuSheet
         from airflow.models import Variable
@@ -36,7 +37,7 @@ def ods_feishu():
         raw_data.to_sql('ods_fs_gmv_target', engine, if_exists='append', index=False, schema='ods')
         logger.info(f'数据更新完成 {len(raw_data)} items')
 
-    @task(retries=5, retry_delay=10)
+    @task(retries=5, retry_delay=10, outlets=[Dataset('mysql://ods.ods_fs_links')])
     def ods_fs_links(**kwargs):
         from include.feishu.feishu_sheet import FeishuSheet
         from airflow.models import Variable
@@ -72,7 +73,7 @@ def ods_feishu():
         raw_data.to_sql('ods_fs_links', engine, if_exists='append', index=False, schema='ods')
         logger.info(f'数据更新完成 {len(raw_data)} items')
 
-    @task(retries=5, retry_delay=10)
+    @task(retries=5, retry_delay=10, outlets=[Dataset('mysql://ods.ods_fs_slice_account')])
     def ods_fs_slice_account(**kwargs):
         from include.feishu.feishu_sheet import FeishuSheet
         from airflow.models import Variable

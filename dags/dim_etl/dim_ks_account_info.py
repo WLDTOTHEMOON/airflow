@@ -5,10 +5,10 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-ods_platform_dataset = Dataset('ods_platform_dataset')
 
-@dag(schedule=[ods_platform_dataset], start_date=pendulum.datetime(2023, 1, 1), catchup=False,
-     default_args={'owner': 'Fang yongchao'}, tags=['dim', 'etl'])
+@dag(schedule=[Dataset('mysql://ods.ods_pf_account_info'), Dataset('mysql://ods.ods_pf_anchor_info'), Dataset('mysql://ods.ods_pf_users')], 
+     start_date=pendulum.datetime(2023, 1, 1), catchup=False,
+     default_args={'owner': 'Fang yongchao'}, tags=['dim', 'etl'], max_active_runs=1)
 def dim_ks_account_info():
     from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
     dim_ks_account_info = SQLExecuteQueryOperator(
