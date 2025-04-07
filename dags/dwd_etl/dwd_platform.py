@@ -80,7 +80,7 @@ def dwd_platform():
         task_id='dwd_ks_item_belong',
         conn_id='mysql',
         sql='sql/dwd_ks_item_belong.sql',
-        default_args = default_args
+        # default_args = default_args
     )
 
     @task(trigger_rule='all_done', outlets=[dwd_platform_dataset])

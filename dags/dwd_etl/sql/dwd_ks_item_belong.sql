@@ -1,6 +1,9 @@
 delete from dwd.dwd_ks_item_belong where 1 = 1;
 
-insert into dwd.dwd_ks_item_belong
+insert into dwd.dwd_ks_item_belong (
+	item_id, start_date, end_date, product_id, product_name,
+	item_category, bd_name, product_submit_at
+)
 select 
 	src.item_id item_id
     ,src.start_date start_date
