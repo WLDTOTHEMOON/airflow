@@ -109,15 +109,18 @@ def ods_ks_activity_item_list():
         import pandas as pd
         begin_time = kwargs['data_interval_start']
         begin_time_fmt = begin_time.in_tz('Asia/Shanghai').format('YYYY-MM-DD HH:mm:ss')
-        sql = f'''
-        select activity_id
-        from ods.ods_ks_activity_info
-        where activity_status != 4
-            or date(activity_end_time) >= '{begin_time_fmt}'
-        order by activity_id desc
-        '''
-        acticity_id_list = pd.read_sql(sql, engine).activity_id.to_list()
-        return acticity_id_list
+        if begin_time.in_tz('Asia/Shanghai').hour == 2:
+            sql = f'''
+            select activity_id
+            from ods.ods_ks_activity_info
+            where activity_status != 4
+                or date(activity_end_time) >= '{begin_time_fmt}'
+            order by activity_id desc
+            '''
+            acticity_id_list = pd.read_sql(sql, engine).activity_id.to_list()
+            return acticity_id_list
+        else:
+            return []
 
     @task(trigger_rule='all_done', retries=10, retry_delay=10)
     def fetch_write_data(tokens, activity_id, **kwargs):
@@ -211,9 +214,11 @@ def ods_ks_activity_item_list():
 
     @task(trigger_rule='all_done', retries=10, retry_delay=10, outlets=[Dataset('mysql://ods.ods_ks_activity_item_list')])
     def summary(num):
-        total = sum(num)
+        if num:
+            total = sum(num)
+        else:
+            total = 0
         logger.info(f'完成数据同步 {total} items')
-
 
     tokens = get_token()
     new_tokens = update_token(tokens=tokens)
@@ -221,6 +226,5 @@ def ods_ks_activity_item_list():
     path = fetch_write_data.partial(tokens=new_tokens).expand(activity_id=activity_id_list)
     num = read_sync_data.expand(path=path)
     summary(num)
-
 
 ods_ks_activity_item_list()
