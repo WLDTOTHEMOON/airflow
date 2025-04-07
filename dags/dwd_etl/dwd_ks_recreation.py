@@ -6,7 +6,8 @@ import pendulum
 logger = logging.getLogger(__name__)
 
 
-@dag(schedule=[Dataset('mysql://ods.ods_crawler_recreation')], 
+@dag(schedule=[Dataset('mysql://ods.ods_crawler_recreation'), Dataset('mysql://ods.ods_ks_cps_order'),
+               Dataset('mysql://ods.ods_ks_leader_order')], 
      start_date=pendulum.datetime(2023, 1, 1), catchup=False,
      default_args={'owner': 'Fang Yongchao'}, tags=['dwd', 'etl'], max_active_runs=1)
 def dwd_ks_recreation():
