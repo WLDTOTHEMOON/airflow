@@ -21,13 +21,13 @@ from (
         ,user_id
         ,select_product_id
         ,product_id
-        ,activity_id
-        ,item_id
+        ,activityId activity_id
+        ,itemId item_id
         ,status
         ,by_anchor
         ,updated_at 
         ,created_at 
-    from ods.ods_platform_links opl 
+    from ods.ods_pf_links opl 
     where updated_at between %(begin_time)s and %(end_time)s
 ) src
 left join (

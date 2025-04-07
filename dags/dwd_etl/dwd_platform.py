@@ -76,12 +76,19 @@ def dwd_platform():
         default_args = default_args
     )
 
+    dwd_ks_item_belong = SQLExecuteQueryOperator(
+        task_id='dwd_ks_item_belong',
+        conn_id='mysql',
+        sql='sql/dwd_ks_item_belong.sql',
+        default_args = default_args
+    )
+
     @task(trigger_rule='all_done', outlets=[dwd_platform_dataset])
     def task_finished():
         logger.info(f'platform 相关数据dwd更新完成')
 
     [dwd_pf_users, dwd_pf_links, dwd_pf_suppliers, dwd_pf_suppliers_belong, 
-     dwd_pf_reviews, dwd_pf_products_anchor, dwd_pf_products_bd] >> \
+     dwd_pf_reviews, dwd_pf_products_anchor, dwd_pf_products_bd] >> dwd_ks_item_belong >> \
     task_finished()
     
 

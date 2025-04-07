@@ -105,7 +105,7 @@ def ods_ks_activity_item_list():
             ).execute({})
             return new_tokens
 
-    @task(retries=5, retry_delay=10)
+    @task(retries=10, retry_delay=10)
     def get_activity_list(**kwargs):
         from include.database.mysql import engine
         import pandas as pd
@@ -121,13 +121,13 @@ def ods_ks_activity_item_list():
         acticity_id_list = pd.read_sql(sql, engine).activity_id.to_list()
         return acticity_id_list
 
-    @task(trigger_rule='all_done', retries=5, retry_delay=10)
+    @task(trigger_rule='all_done', retries=10, retry_delay=10)
     def fetch_write_data(tokens, activity_id, **kwargs):
         from qcloud_cos import CosConfig, CosS3Client
         from airflow.models import Variable
         from include.kuaishou.ks_client import KsClient
         import json
-
+        logger.info(f'获取数据 activity_id: {activity_id} ')
         begin_time = kwargs['data_interval_start']
         end_time = kwargs['data_interval_end']
         date_fmt = begin_time.in_tz('Asia/Shanghai').format('YYYYMMDD')
@@ -150,7 +150,7 @@ def ods_ks_activity_item_list():
             'path': path
         }
 
-    @task(trigger_rule='all_done', retries=5, retry_delay=10)
+    @task(trigger_rule='all_done', retries=10, retry_delay=10)
     def read_sync_data(path):
         from qcloud_cos import CosConfig, CosS3Client
         from airflow.models import Variable
@@ -211,7 +211,7 @@ def ods_ks_activity_item_list():
             logger.info('数据为空，跳过同步')
             return 0
 
-    @task(trigger_rule='all_done', retries=5, retry_delay=10, outlets=[ods_activity_dataset])
+    @task(trigger_rule='all_done', retries=10, retry_delay=10, outlets=[ods_activity_dataset])
     def summary(num):
         total = sum(num)
         logger.info(f'完成数据同步 {total} items')

@@ -4,8 +4,12 @@ import pendulum
 import logging
 
 logger = logging.getLogger(__name__)
-
 ods_activity_dataset = Dataset('ods_activity_dataset')
+default_args = {
+    'retries': 5, 
+    'retry_delay': 10
+}
+
 
 @dag(schedule=[ods_activity_dataset], start_date=pendulum.datetime(2023, 1, 1), catchup=False,
      default_args={'owner': 'Fang yongchao'}, tags=['dim', 'etl'])
@@ -15,6 +19,7 @@ def dim_ks_activity_info():
         task_id='dim_ks_activity_info',
         conn_id='mysql',
         sql='sql/dim_ks_activity_info.sql',
+        default_args=default_args
     )
     
     dim_ks_activity_info
