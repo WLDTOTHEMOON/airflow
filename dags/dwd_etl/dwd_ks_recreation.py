@@ -20,7 +20,8 @@ def dwd_ks_recreation():
         task_id='dwd_ks_recreation',
         conn_id='mysql',
         sql='sql/dwd_ks_recreation.sql',
-        parameters={'begin_time': begin_time, 'end_time': end_time}
+        parameters={'begin_time': begin_time, 'end_time': end_time},
+        outlets=[Dataset('mysql://dwd.dwd_ks_recreation')]
     )
     
     dwd_ks_recreation

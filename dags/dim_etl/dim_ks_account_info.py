@@ -15,6 +15,7 @@ def dim_ks_account_info():
         task_id='dim_ks_account_info',
         conn_id='mysql',
         sql='sql/dim_ks_account_info.sql',
+        outlets=[Dataset('mysql://dim.dim_ks_account_info')]
     )
     
     dim_ks_account_info

@@ -20,7 +20,8 @@ def dwd_ks_leader_commission_income():
         task_id='dwd_ks_leader_commission_income',
         conn_id='mysql',
         sql='sql/dwd_ks_leader_commission_income.sql',
-        parameters={'begin_time': begin_time, 'end_time': end_time}
+        parameters={'begin_time': begin_time, 'end_time': end_time},
+        outlets=[Dataset('mysql://dwd.dwd_ks_leader_commission_income')]
     )
     
     dwd_ks_leader_commission_income

@@ -21,6 +21,7 @@ def dwd_ks_cps_order():
         conn_id='mysql',
         sql='sql/dwd_ks_cps_order.sql',
         parameters={'begin_time': begin_time, 'end_time': end_time},
+        outlets=[Dataset('mysql://dwd.dwd_ks_cps_order')]
     )
     
     dwd_ks_cps_order
