@@ -4,7 +4,10 @@ import logging
 import pendulum
 
 logger = logging.getLogger(__name__)
-
+default_args = {
+    'retries': 5, 
+    'retry_delay': 10
+}
 
 @dag(schedule=[Dataset('mysql://dwd.dwd_ks_cps_order'), Dataset('mysql://dwd.dwd_ks_leader_commission_income'), Dataset('mysql://dwd.dwd_ks_recreation'),
                Dataset('mysql://dim.dim_ks_account_info'), Dataset('mysql://dwd.dwd_ks_item_belong')], 
@@ -21,6 +24,7 @@ def dws_ks_big_tbl():
         task_id='dws_ks_big_tbl',
         conn_id='mysql',
         sql='sql/dws_ks_big_tbl.sql',
+        default_args = default_args,
         parameters={'begin_time': begin_time, 'end_time': end_time}
     )
     
