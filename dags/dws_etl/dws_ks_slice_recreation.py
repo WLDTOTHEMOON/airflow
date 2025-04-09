@@ -23,7 +23,7 @@ def dws_ks_slice_recreation():
         task_id='dws_ks_slice_recreation',
         conn_id='mysql',
         sql='sql/dws_ks_slice_recreation.sql',
-        # default_args = default_args,
+        default_args = default_args,
         parameters={'begin_time': begin_time, 'end_time': end_time}
     )
     
