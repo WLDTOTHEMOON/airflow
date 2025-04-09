@@ -10,7 +10,7 @@ select
     date(order_create_time - interval 4 hour) order_date
     ,'A' port
     ,src.anchor_id account_id
-    ,mcn.mcn_id mcn_id
+    ,coalesce(mcn.mcn_id, '-') mcn_id
     ,item_id
     ,item_title
     ,sum(order_trade_amount) origin_gmv
@@ -62,7 +62,7 @@ select
     date(order_create_time - interval 4 hour) order_date
     ,'B' port
     ,src.account_id
-    ,mcn.mcn_id mcn_id
+    ,coalesce(mcn.mcn_id, '-') mcn_id
     ,item_id
     ,item_title
     ,sum(order_trade_amount) origin_gmv
