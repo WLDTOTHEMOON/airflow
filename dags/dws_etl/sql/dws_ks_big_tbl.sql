@@ -1,4 +1,4 @@
-delete from dws.dws_ks_ec_2hourly 
+delete from dws.dws_ks_big_tbl 
 where order_date >= (select date_format(min(order_create_time), '%%Y-%%m-%%d') from ods.ods_ks_cps_order where update_time between %(begin_time)s and %(end_time)s)
 
 insert into dws.dws_ks_big_tbl (
