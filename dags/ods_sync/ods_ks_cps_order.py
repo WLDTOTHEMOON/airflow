@@ -239,15 +239,30 @@ def ods_ks_cps_order():
             logger.info('数据为空，跳过同步')
             return 0
 
-    @task(trigger_rule='all_done', outlets=[Dataset('mysql://ods.ods_ks_cps_order')])
+    @task(trigger_rule='all_done', retries=10, retry_delay=10, outlets=[Dataset('mysql://ods.ods_ks_cps_order')])
     def summary(num, period):
         from airflow.models import Variable
         total = sum(num)
         begin_time = period['begin_time'].in_tz('Asia/Shanghai').format('YYYY-MM-DD HH:mm:ss')
         end_time = period['end_time'].in_tz('Asia/Shanghai').format('YYYY-MM-DD HH:mm:ss')
+        from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
+        sql = f'''
+        select min(order_create_time)
+        from ods.ods_ks_cps_order 
+        where update_time between %(begin_time)s and %(end_time)s
+        '''
+        order_create_time = SQLExecuteQueryOperator(
+            task_id='order_create_time',
+            conn_id='mysql',
+            sql=sql,
+            parameters={'begin_time': begin_time, 'end_time': end_time}
+        ).execute({})
+        order_create_time = order_create_time[0][0]
+
         Variable.set('ods_ks_cps_order_begin_time', begin_time)
         Variable.set('ods_ks_cps_order_end_time', end_time)
-        logger.info(f'写入数据范围 From {begin_time} to {end_time}')
+        Variable.set('ods_ks_cps_order_order_create_time', order_create_time)
+        logger.info(f'写入数据范围 From {begin_time} to {end_time}, 最早订单时间 {order_create_time}')
         logger.info(f'完成数据同步 {total} items')
 
     period = get_period()

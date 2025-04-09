@@ -14,14 +14,13 @@ def dwd_ks_recreation():
     from airflow.models import Variable
     from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
 
-    begin_time = Variable.get('ods_ks_cps_order_begin_time')
-    end_time = Variable.get('ods_ks_cps_order_end_time')
-    
+    order_create_time = Variable.get('ods_ks_cps_order_order_create_time')
+
     dwd_ks_recreation = SQLExecuteQueryOperator(
         task_id='dwd_ks_recreation',
         conn_id='mysql',
         sql='sql/dwd_ks_recreation.sql',
-        parameters={'begin_time': begin_time, 'end_time': end_time},
+        parameters={'order_create_time': order_create_time},
         outlets=[Dataset('mysql://dwd.dwd_ks_recreation')]
     )
     
