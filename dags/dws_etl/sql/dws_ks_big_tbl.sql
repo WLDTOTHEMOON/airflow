@@ -1,3 +1,6 @@
+delete from dws.dws_ks_ec_2hourly 
+where order_date >= (select date_format(min(order_create_time), '%%Y-%%m-%%d') from ods.ods_ks_cps_order where update_time between %(begin_time)s and %(end_time)s)
+
 insert into dws.dws_ks_big_tbl (
 	order_date, account_id, anchor_name, item_id, item_title, first_sell_at, item_category, product_id,
 	product_name, bd_name, product_submit_at, origin_gmv, origin_order_number, origin_item_number, final_gmv, final_order_number,
@@ -142,26 +145,26 @@ left join (
         ,start_date
         ,end_date	
     from dwd.dwd_ks_item_belong
-) item_belong on src.item_id = item_belong.item_id and src.order_date between item_belong.start_date and item_belong.end_date
-on duplicate key update 
-	first_sell_at = values(first_sell_at),
-	item_category = values(item_category),
-	product_id = values(product_id),
-	product_name = values(product_name),
-	bd_name = values(bd_name),
-	product_submit_at = values(product_submit_at),
-	origin_gmv = values(origin_gmv),
-	origin_order_number = values(origin_order_number),
-	origin_item_number = values(origin_item_number),
-	final_gmv = values(final_gmv),
-	final_order_number = values(final_order_number),
-	final_item_number = values(final_item_number),
-	send_order_number = values(send_order_number),
-	estimated_income = values(estimated_income),
-	estimated_service_income = values(estimated_service_income),
-	settlement_gmv = values(settlement_gmv),
-	settlement_order_number = values(settlement_order_number),
-	settlement_income = values(settlement_income),
-	settlement_service_income = values(settlement_service_income),
-	send_order_number_yesterday = values(send_order_number_yesterday),
-	income = values(income);
+) item_belong on src.item_id = item_belong.item_id and src.order_date between item_belong.start_date and item_belong.end_date;
+-- on duplicate key update 
+-- 	first_sell_at = values(first_sell_at),
+-- 	item_category = values(item_category),
+-- 	product_id = values(product_id),
+-- 	product_name = values(product_name),
+-- 	bd_name = values(bd_name),
+-- 	product_submit_at = values(product_submit_at),
+-- 	origin_gmv = values(origin_gmv),
+-- 	origin_order_number = values(origin_order_number),
+-- 	origin_item_number = values(origin_item_number),
+-- 	final_gmv = values(final_gmv),
+-- 	final_order_number = values(final_order_number),
+-- 	final_item_number = values(final_item_number),
+-- 	send_order_number = values(send_order_number),
+-- 	estimated_income = values(estimated_income),
+-- 	estimated_service_income = values(estimated_service_income),
+-- 	settlement_gmv = values(settlement_gmv),
+-- 	settlement_order_number = values(settlement_order_number),
+-- 	settlement_income = values(settlement_income),
+-- 	settlement_service_income = values(settlement_service_income),
+-- 	send_order_number_yesterday = values(send_order_number_yesterday),
+-- 	income = values(income);
