@@ -28,7 +28,7 @@ from (
     from ods.ods_fs_slice_account
     where anchor_id in (
     	select account_id 
-    	from dim.dim_ks_anchor_info
+    	from dim.dim_ks_account_info
     	where line = '切片' 
     		and anchor_name = '樊欣羽'
     )
@@ -75,7 +75,7 @@ select
 from (
     select 
         account_id 
-    from dim.dim_ks_anchor_info dkai 
+    from dim.dim_ks_account_info dkai 
     where line = '切片' and anchor_name = '樊欣羽'
             and account_id not in (select anchor_id from ods.ods_slice_account osa)
 ) src
