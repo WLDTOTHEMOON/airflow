@@ -52,7 +52,7 @@ inner join(
         ,order_create_time
     from dwd.dwd_ks_cps_order dco 
     where order_create_time >= date_format(%(order_create_time)s - interval 4 hour, '%%Y-%%m-%%d 04:00:00')
-        and o_id not in ( select o_id from ods.ods_cps_order_recreation )
+        and o_id not in ( select o_id from dwd.dwd_ks_recreation )
 ) income on src.anchor_id = income.anchor_id and income.order_create_time between src.start_time and src.end_time
 group by 1, 2, 3, 4, 5, 6
 union all
