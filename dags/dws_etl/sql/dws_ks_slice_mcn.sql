@@ -19,7 +19,7 @@ select
     ,sum(if(cps_order_status != '已失效' and send_status = '已发货', 1, 0)) send_order_number
     ,sum(estimated_income) estimated_income
     ,sum(if(cps_order_status = '已失效', 0, estimated_service_income)) estimated_service_income
-    ,sum(if(send_time between date_format(current_timestamp - interval 1 day, '%Y-%m-%d 10:00:00') and date_format(current_timestamp, '%Y-%m-%d 10:00:00'), 1, 0)) send_order_number_yesterday
+    ,sum(if(send_time between date_format(current_timestamp - interval 1 day, '%%Y-%%m-%%d 10:00:00') and date_format(current_timestamp, '%%Y-%%m-%%d 10:00:00'), 1, 0)) send_order_number_yesterday
 from (
     select 
 	    anchor_id
@@ -71,7 +71,7 @@ select
     ,sum(if(cps_order_status != '已失效' and send_status = '已发货', 1, 0)) send_order_number
     ,0 estimated_income -- B端佣金不归属于公司，写死0
     ,sum(if(cps_order_status = '已失效', 0, estimated_service_income)) estimated_service_income
-    ,sum(if(send_time between date_format(current_timestamp - interval 1 day, '%Y-%m-%d 10:00:00') and date_format(current_timestamp, '%Y-%m-%d 10:00:00'), 1, 0)) send_order_number_yesterday
+    ,sum(if(send_time between date_format(current_timestamp - interval 1 day, '%%Y-%%m-%%d 10:00:00') and date_format(current_timestamp, '%%Y-%%m-%%d 10:00:00'), 1, 0)) send_order_number_yesterday
 from (
     select 
         account_id 
