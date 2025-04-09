@@ -9,7 +9,7 @@ default_args = {
     'retry_delay': 10
 }
 
-@dag(schedule=[Dataset('mysql://dwd.dwd_ks_leader_commission_income '), Dataset('mysql://dwd.dwd_ks_recreation'), Dataset('mysql://ods.ods_fs_slice_account')], 
+@dag(schedule=[Dataset('mysql://dwd.dwd_ks_leader_commission_income'), Dataset('mysql://dwd.dwd_ks_recreation'), Dataset('mysql://ods.ods_fs_slice_account')], 
      start_date=pendulum.datetime(2023, 1, 1), catchup=False,
      default_args={'owner': 'Fang Yongchao'}, tags=['dws', 'etl'], max_active_runs=1)
 def dws_ks_slice_recreation():
