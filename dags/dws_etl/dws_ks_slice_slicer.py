@@ -10,7 +10,7 @@ default_args = {
 }
 
 @dag(schedule=[Dataset('mysql://dim.dim_ks_account_info'), Dataset('mysql://dwd.dwd_ks_cps_order'), Dataset('mysql://ods.ods_fs_slice_account'),
-               Dataset('mysql://dwd.dwd.dwd_ks_leader_order')], 
+               Dataset('mysql://dwd.dwd_ks_leader_order')], 
      start_date=pendulum.datetime(2023, 1, 1), catchup=False,
      default_args={'owner': 'Fang Yongchao'}, tags=['dws', 'etl'], max_active_runs=1)
 def dws_ks_slice_slicer():

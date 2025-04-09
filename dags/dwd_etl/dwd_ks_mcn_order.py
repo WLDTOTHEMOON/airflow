@@ -20,7 +20,8 @@ def dwd_ks_mcn_order():
         task_id='dwd_ks_mcn_order',
         conn_id='mysql',
         sql='sql/dwd_ks_mcn_order.sql',
-        parameters={'begin_time': begin_time, 'end_time': end_time}
+        parameters={'begin_time': begin_time, 'end_time': end_time},
+        outlets=[Dataset('mysql://dwd.dwd_ks_mcn_order')]
     )
     
     dwd_ks_mcn_order
