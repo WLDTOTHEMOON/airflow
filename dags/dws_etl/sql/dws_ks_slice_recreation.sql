@@ -1,5 +1,5 @@
 delete from dws.dws_ks_slice_recreation
-where order_date >= (select date_format(min(order_create_time), '%%Y-%%m-%%d') from ods.ods_ks_cps_order where update_time between %(begin_time)s and %(end_time)s);
+where order_date >= date_format(%(order_create_time)s - interval 4 hour, '%%Y-%%m-%%d');
 
 
 insert into dws.dws_ks_slice_recreation (
@@ -40,7 +40,7 @@ from (
         ,leader_share_estimated_income
         ,leader_keep_estimated_service_income
     from dwd.dwd_ks_leader_commission_income 
-    where order_create_time >= (select date_format(min(order_create_time), '%%Y-%%m-%%d 04:00:00') from ods.ods_ks_cps_order where update_time between %(begin_time)s and %(end_time)s)
+    where order_create_time >= date_format(%(order_create_time)s - interval 4 hour, '%%Y-%%m-%%d 04:00:00')
 ) src
 inner join (
     select 
@@ -84,7 +84,7 @@ from (
         ,0 leader_share_estimated_income
         ,leader_keep_estimated_service_income
     from dwd.dwd_ks_leader_commission_income 
-    where order_create_time >= (select date_format(min(order_create_time), '%%Y-%%m-%%d 04:00:00') from ods.ods_ks_cps_order where update_time between %(begin_time)s and %(end_time)s)
+    where order_create_time >= date_format(%(order_create_time)s - interval 4 hour, '%%Y-%%m-%%d 04:00:00')
 ) src
 left join (
     select 
@@ -124,7 +124,7 @@ from (
         ,send_status
         ,send_time
     from dwd.dwd_ks_recreation dkr 
-    where order_create_time >= (select date_format(min(order_create_time), '%%Y-%%m-%%d 04:00:00') from ods.ods_ks_cps_order where update_time between %(begin_time)s and %(end_time)s)
+    where order_create_time >= date_format(%(order_create_time)s - interval 4 hour, '%%Y-%%m-%%d 04:00:00')
 ) src
 left join (
 	select o_id 

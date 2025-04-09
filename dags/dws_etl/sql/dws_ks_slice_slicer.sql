@@ -1,5 +1,5 @@
 delete from dws.dws_ks_slice_slicer
-where order_date >= (select date_format(min(order_create_time), '%%Y-%%m-%%d') from ods.ods_ks_cps_order where update_time between %(begin_time)s and %(end_time)s);
+where order_date >= date_format(%(order_create_time)s - interval 4 hour, '%%Y-%%m-%%d');
 
 
 insert into dws.dws_ks_slice_slicer (
@@ -51,7 +51,7 @@ inner join(
         ,coalesce(estimated_service_income,0) estimated_service_income
         ,order_create_time
     from dwd.dwd_ks_cps_order dco 
-    where order_create_time >= (select date_format(min(order_create_time), '%%Y-%%m-%%d 04:00:00') from ods.ods_ks_cps_order where update_time between %(begin_time)s and %(end_time)s)
+    where order_create_time >= date_format(%(order_create_time)s - interval 4 hour, '%%Y-%%m-%%d 04:00:00')
         and o_id not in ( select o_id from ods.ods_cps_order_recreation )
 ) income on src.anchor_id = income.anchor_id and income.order_create_time between src.start_time and src.end_time
 group by 1, 2, 3, 4, 5, 6
@@ -91,7 +91,7 @@ from (
         ,order_create_time
         ,activity_id
     from dwd.dwd_ks_leader_order
-    where order_create_time >= (select date_format(min(order_create_time), '%%Y-%%m-%%d 04:00:00') from ods.ods_ks_cps_order where update_time between %(begin_time)s and %(end_time)s)
+    where order_create_time >= date_format(%(order_create_time)s - interval 4 hour, '%%Y-%%m-%%d 04:00:00')
         and activity_id in (
             '5084323902','5142199902','4920930902','6701551902','6244252902', '5084317902', '7469588902'
         )

@@ -16,15 +16,14 @@ def dws_ks_slice_recreation():
     from airflow.models import Variable
     from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
 
-    begin_time = Variable.get('ods_ks_cps_order_begin_time')
-    end_time = Variable.get('ods_ks_cps_order_end_time')
+    order_create_time = Variable.get('ods_ks_cps_order_order_create_time')
     
     dws_ks_slice_recreation = SQLExecuteQueryOperator(
         task_id='dws_ks_slice_recreation',
         conn_id='mysql',
         sql='sql/dws_ks_slice_recreation.sql',
         default_args = default_args,
-        parameters={'begin_time': begin_time, 'end_time': end_time}
+        parameters={'order_create_time': order_create_time}
     )
     
     dws_ks_slice_recreation
