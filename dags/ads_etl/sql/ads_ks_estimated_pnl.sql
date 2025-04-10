@@ -25,7 +25,7 @@ with cps_lst as (
             ,update_time
             ,order_create_time
         from dwd.dwd_ks_cps_order dkco
-        where order_create_time between concat(current_date - interval 180 day, '00:00:00') and concat(current_date - interval 15 day, ' 23:59:59')
+        where order_create_time between concat(current_date - interval 180 day, ' 00:00:00') and concat(current_date - interval 15 day, ' 23:59:59')
             and settlement_biz_type != '聚力计划'
     ) src
     left join (
@@ -35,12 +35,12 @@ with cps_lst as (
     left join (
         select o_id
         from dwd.dwd_ks_recreation
-        where order_create_time between concat(current_date - interval 180 day, '00:00:00') and concat(current_date - interval 15 day, ' 23:59:59')
+        where order_create_time between concat(current_date - interval 180 day, ' 00:00:00') and concat(current_date - interval 15 day, ' 23:59:59')
     ) recreation on src.o_id = recreation.o_id
     left join (
         select o_id
         from dwd.dwd_ks_leader_commission_income
-        where order_create_time between concat(current_date - interval 180 day, '00:00:00') and concat(current_date - interval 15 day, ' 23:59:59')
+        where order_create_time between concat(current_date - interval 180 day, ' 00:00:00') and concat(current_date - interval 15 day, ' 23:59:59')
     ) lci on src.o_id = lci.o_id
     inner join (
         select
