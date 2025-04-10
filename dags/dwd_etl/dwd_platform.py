@@ -12,7 +12,7 @@ default_args = {
 }
 
 
-@dag(schedule=[Dataset('mysql://ods.ods_pf_links'), Dataset('mysql://ods.ods_pf_anchor_select_products')],
+@dag(schedule=[Dataset('mysql://ods.ods_pf_links'), Dataset('mysql://ods.ods_pf_anchor_select_products'), Dataset('mysql://ods.ods_pf_summary')],
      start_date=pendulum.datetime(2023, 1, 1), catchup=False,
      default_args={'owner': 'Fang Yongchao'}, tags=['dwd', 'etl'], max_active_runs=1)
 def dwd_pf_links():
@@ -28,7 +28,8 @@ def dwd_pf_links():
 dwd_pf_links()
 
 
-@dag(schedule=[Dataset('mysql://ods.ods_pf_users')], start_date=pendulum.datetime(2023, 1, 1), catchup=False,
+@dag(schedule=[Dataset('mysql://ods.ods_pf_users'), Dataset('mysql://ods.ods_pf_summary')],
+     start_date=pendulum.datetime(2023, 1, 1), catchup=False,
      default_args={'owner': 'Fang Yongchao'}, tags=['dwd', 'etl'], max_active_runs=1)
 def dwd_pf_users():
     dwd_pf_users = SQLExecuteQueryOperator(
@@ -43,7 +44,7 @@ def dwd_pf_users():
 dwd_pf_users()
 
 
-@dag(schedule=[Dataset('mysql://ods.ods_pf_suppliers'), Dataset('mysql://ods.ods_pf_users')], 
+@dag(schedule=[Dataset('mysql://ods.ods_pf_suppliers'), Dataset('mysql://ods.ods_pf_users'), Dataset('mysql://ods.ods_pf_summary')], 
      start_date=pendulum.datetime(2023, 1, 1), catchup=False,
      default_args={'owner': 'Fang Yongchao'}, tags=['dwd', 'etl'], max_active_runs=1)
 def dwd_pf_suppliers():
@@ -59,7 +60,8 @@ def dwd_pf_suppliers():
 dwd_pf_suppliers()
 
 
-@dag(schedule=[Dataset('mysql://ods.ods_pf_reviews'), Dataset('mysql://ods.ods_pf_users')], start_date=pendulum.datetime(2023, 1, 1), catchup=False,
+@dag(schedule=[Dataset('mysql://ods.ods_pf_reviews'), Dataset('mysql://ods.ods_pf_users'), Dataset('mysql://ods.ods_pf_summary')],
+     start_date=pendulum.datetime(2023, 1, 1), catchup=False,
      default_args={'owner': 'Fang Yongchao'}, tags=['dwd', 'etl'], max_active_runs=1)
 def dwd_pf_reviews():
     dwd_pf_reviews = SQLExecuteQueryOperator(
@@ -74,7 +76,8 @@ def dwd_pf_reviews():
 dwd_pf_reviews()
 
 
-@dag(schedule=[Dataset('mysql://ods.ods_pf_products')], start_date=pendulum.datetime(2023, 1, 1), catchup=False,
+@dag(schedule=[Dataset('mysql://ods.ods_pf_products'), Dataset('mysql://ods.ods_pf_summary')],
+     start_date=pendulum.datetime(2023, 1, 1), catchup=False,
      default_args={'owner': 'Fang Yongchao'}, tags=['dwd', 'etl'],
      max_active_tasks=4, max_active_runs=1)
 def dwd_pf_products_anchor():
@@ -90,7 +93,8 @@ def dwd_pf_products_anchor():
 dwd_pf_products_anchor()
 
 
-@dag(schedule=[Dataset('mysql://ods.ods_pf_products')], start_date=pendulum.datetime(2023, 1, 1), catchup=False,
+@dag(schedule=[Dataset('mysql://ods.ods_pf_products'), Dataset('mysql://ods.ods_pf_summary')],
+     start_date=pendulum.datetime(2023, 1, 1), catchup=False,
      default_args={'owner': 'Fang Yongchao'}, tags=['dwd', 'etl'],
      max_active_tasks=4, max_active_runs=1)
 def dwd_pf_products_bd():
@@ -116,7 +120,7 @@ def dwd_ks_item_belong():
         task_id='dwd_ks_item_belong',
         conn_id='mysql',
         sql='sql/dwd_ks_item_belong.sql',
-        # default_args = default_args,
+        default_args = default_args,
         outlets=[Dataset('mysql://dwd.dwd_ks_item_belong')]
     )
     dwd_ks_item_belong

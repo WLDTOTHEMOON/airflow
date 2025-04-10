@@ -6,96 +6,94 @@ import pendulum
 
 logger = logging.getLogger(__name__)
 MYSQL_KEYWORDS = ['group']
-ods_crawler_dataset = Dataset('ods_crawler_dataset')
 
+
+def generate_upsert_template(schema, table):
+    import pandas as pd
+    from include.database.mysql import engine
+    primary_key = pd.read_sql(
+        f"select column_name from information_schema.columns where table_schema = '{schema}' and table_name = '{table}' and column_key = 'PRI'", engine
+    )
+    primary_key = primary_key['COLUMN_NAME'].to_list()
+    other_columns = pd.read_sql(
+        f"select column_name from information_schema.columns where table_schema = '{schema}' and table_name = '{table}' and column_key != 'PRI'", engine
+    )
+    other_columns = other_columns['COLUMN_NAME'].to_list()
+
+    
+    primary_key = [f'{each}_s' if each in MYSQL_KEYWORDS else each for each in primary_key]
+    other_columns = [f'`{each}`' if each in MYSQL_KEYWORDS else each for each in other_columns]
+
+    sql = f'''
+    insert into {schema}.{table} ({','.join(primary_key + other_columns)})
+    values ({','.join([f':{each}' for each in primary_key + other_columns])})
+    on duplicate key update
+    {',\n'.join([f'{each} = values({each})' for each in other_columns])}
+    '''
+    return sql
+
+def get_flag(path):
+    from qcloud_cos import CosConfig, CosS3Client
+    from airflow.models import Variable
+    import json
+    cos_config = Variable.get('cos', deserialize_json=True)
+    client=CosS3Client(CosConfig(SecretId=cos_config['secret_id'], SecretKey=cos_config['secret_key'], Region=cos_config['region']))
+    path = path + 'updated.json'
+    raw_data = client.get_object(Bucket=cos_config['bucket'], Key=path)
+    raw_data = raw_data['Body'].get_raw_stream().read()
+    raw_data = json.loads(raw_data)
+    return raw_data['updated']
+
+def update_flag(path, flag):
+    from qcloud_cos import CosConfig, CosS3Client
+    from airflow.models import Variable
+    import json
+    logger.info(f'更新flag 为 {flag}')
+    cos_config = Variable.get('cos', deserialize_json=True)
+    client=CosS3Client(CosConfig(SecretId=cos_config['secret_id'], SecretKey=cos_config['secret_key'], Region=cos_config['region']))
+    path = path + 'updated.json'
+    client.put_object(
+        Bucket=cos_config['bucket'],
+        Body=json.dumps({'updated': flag}, indent=2),
+        Key=path
+    )
+    return flag
+
+def read_data(path, suffix):
+    from qcloud_cos import CosConfig, CosS3Client
+    from airflow.models import Variable
+    from include.database.mysql import engine
+    from sqlalchemy import text
+    from io import BytesIO
+    import pandas as pd
+    import json
+    cos_config = Variable.get('cos', deserialize_json=True)
+    client=CosS3Client(CosConfig(SecretId=cos_config['secret_id'], SecretKey=cos_config['secret_key'], Region=cos_config['region']))
+
+    current_time = pendulum.now('Asia/Shanghai').format('YYYY-MM-DD')
+    path = path + current_time + suffix
+    logger.info(f'获取数据 {path}')
+    response = client.get_object(Bucket=cos_config['bucket'], Key=path)
+    raw_data = response['Body'].get_raw_stream().read()
+    if suffix == '.csv':
+        raw_data = pd.read_csv(BytesIO(raw_data), na_filter=None)
+    elif suffix == '.json':
+        raw_data = json.loads(raw_data)
+    elif suffix == '.xlsx':
+        raw_data = pd.read_excel(BytesIO(raw_data))
+    return raw_data
+
+def get_child_folder(path):
+    from qcloud_cos import CosConfig, CosS3Client
+    from airflow.models import Variable
+    cos_config = Variable.get('cos', deserialize_json=True)
+    client=CosS3Client(CosConfig(SecretId=cos_config['secret_id'], SecretKey=cos_config['secret_key'], Region=cos_config['region']))
+    response = client.list_objects(Bucket=cos_config['bucket'], Prefix=path, Delimiter='/')
+    return [each['Prefix'] for each in response['CommonPrefixes']]
 
 @dag(schedule_interval='0 */2 * * *', start_date=pendulum.datetime(2023, 1, 1), catchup=False,
-     default_args={'owner': 'Fang Yongchao'}, tags=['ods', 'sync', 'crawler'],
-     max_active_tasks=3, max_active_runs=1)
-def ods_crawler():
-    def generate_upsert_template(schema, table):
-        import pandas as pd
-        from include.database.mysql import engine
-        primary_key = pd.read_sql(
-            f"select column_name from information_schema.columns where table_schema = '{schema}' and table_name = '{table}' and column_key = 'PRI'", engine
-        )
-        primary_key = primary_key['COLUMN_NAME'].to_list()
-        other_columns = pd.read_sql(
-            f"select column_name from information_schema.columns where table_schema = '{schema}' and table_name = '{table}' and column_key != 'PRI'", engine
-        )
-        other_columns = other_columns['COLUMN_NAME'].to_list()
-
-        
-        primary_key = [f'{each}_s' if each in MYSQL_KEYWORDS else each for each in primary_key]
-        other_columns = [f'`{each}`' if each in MYSQL_KEYWORDS else each for each in other_columns]
-
-        sql = f'''
-        insert into {schema}.{table} ({','.join(primary_key + other_columns)})
-        values ({','.join([f':{each}' for each in primary_key + other_columns])})
-        on duplicate key update
-        {',\n'.join([f'{each} = values({each})' for each in other_columns])}
-        '''
-        return sql
-
-    def get_flag(path):
-        from qcloud_cos import CosConfig, CosS3Client
-        from airflow.models import Variable
-        import json
-        cos_config = Variable.get('cos', deserialize_json=True)
-        client=CosS3Client(CosConfig(SecretId=cos_config['secret_id'], SecretKey=cos_config['secret_key'], Region=cos_config['region']))
-        path = path + 'updated.json'
-        raw_data = client.get_object(Bucket=cos_config['bucket'], Key=path)
-        raw_data = raw_data['Body'].get_raw_stream().read()
-        raw_data = json.loads(raw_data)
-        return raw_data['updated']
-    
-    def update_flag(path, flag):
-        from qcloud_cos import CosConfig, CosS3Client
-        from airflow.models import Variable
-        import json
-        logger.info(f'更新flag 为 {flag}')
-        cos_config = Variable.get('cos', deserialize_json=True)
-        client=CosS3Client(CosConfig(SecretId=cos_config['secret_id'], SecretKey=cos_config['secret_key'], Region=cos_config['region']))
-        path = path + 'updated.json'
-        client.put_object(
-            Bucket=cos_config['bucket'],
-            Body=json.dumps({'updated': flag}, indent=2),
-            Key=path
-        )
-        return flag
-
-    def read_data(path, suffix):
-        from qcloud_cos import CosConfig, CosS3Client
-        from airflow.models import Variable
-        from include.database.mysql import engine
-        from sqlalchemy import text
-        from io import BytesIO
-        import pandas as pd
-        import json
-        cos_config = Variable.get('cos', deserialize_json=True)
-        client=CosS3Client(CosConfig(SecretId=cos_config['secret_id'], SecretKey=cos_config['secret_key'], Region=cos_config['region']))
-    
-        current_time = pendulum.now('Asia/Shanghai').format('YYYY-MM-DD')
-        path = path + current_time + suffix
-        logger.info(f'获取数据 {path}')
-        response = client.get_object(Bucket=cos_config['bucket'], Key=path)
-        raw_data = response['Body'].get_raw_stream().read()
-        if suffix == '.csv':
-            raw_data = pd.read_csv(BytesIO(raw_data), na_filter=None)
-        elif suffix == '.json':
-            raw_data = json.loads(raw_data)
-        elif suffix == '.xlsx':
-            raw_data = pd.read_excel(BytesIO(raw_data))
-        return raw_data
-
-    def get_child_folder(path):
-        from qcloud_cos import CosConfig, CosS3Client
-        from airflow.models import Variable
-        cos_config = Variable.get('cos', deserialize_json=True)
-        client=CosS3Client(CosConfig(SecretId=cos_config['secret_id'], SecretKey=cos_config['secret_key'], Region=cos_config['region']))
-        response = client.list_objects(Bucket=cos_config['bucket'], Prefix=path, Delimiter='/')
-        return [each['Prefix'] for each in response['CommonPrefixes']]
-
+     default_args={'owner': 'Fang Yongchao'}, tags=['ods', 'sync', 'crawler'], max_active_runs=1)
+def ods_crawler_leader_commission_income():
     @task(retries=5, retry_delay=10, outlets=[Dataset('mysql://ods.ods_crawler_leader_commission_income')])
     def ods_crawler_leader_commission_income():
         from include.database.mysql import engine
@@ -148,7 +146,12 @@ def ods_crawler():
             update_flag(path=path, flag=0)
         else:
             logger.info(f'数据未更新，结束任务')
-    
+    ods_crawler_leader_commission_income()
+ods_crawler_leader_commission_income()
+
+@dag(schedule_interval='0 */2 * * *', start_date=pendulum.datetime(2023, 1, 1), catchup=False,
+     default_args={'owner': 'Fang Yongchao'}, tags=['ods', 'sync', 'crawler'], max_active_runs=1)
+def ods_crawler_recreation():
     @task(retries=5, retry_delay=10, outlets=[Dataset('mysql://ods.ods_crawler_recreation')])
     def ods_crawler_recreation():
         from include.database.mysql import engine
@@ -204,7 +207,12 @@ def ods_crawler():
                 update_flag(path=each, flag=0)
             else:
                 logger.info(f'数据未更新，结束任务')
+    ods_crawler_recreation()
+ods_crawler_recreation()
 
+@dag(schedule_interval='0 */2 * * *', start_date=pendulum.datetime(2023, 1, 1), catchup=False,
+     default_args={'owner': 'Fang Yongchao'}, tags=['ods', 'sync', 'crawler'], max_active_runs=1)
+def ods_crawler_mcn_order():
     @task(retries=5, retry_delay=10, outlets=[Dataset('mysql://ods.ods_crawler_mcn_order')])
     def ods_crawler_mcn_order():
         from include.database.mysql import engine
@@ -224,9 +232,5 @@ def ods_crawler():
             update_flag(path=path, flag=0)
         else:
             logger.info(f'数据未更新，结束任务')
-
-    ods_crawler_leader_commission_income() 
-    ods_crawler_recreation()
     ods_crawler_mcn_order()
-
-ods_crawler()
+ods_crawler_mcn_order()
