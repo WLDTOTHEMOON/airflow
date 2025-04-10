@@ -1,4 +1,4 @@
-delete from ads.ads_anchor_select_reviews_daily;
+delete from ads.ads_anchor_select_reviews_daily where 1 = 1;
     
 insert into ads.ads_anchor_select_reviews_daily
 select

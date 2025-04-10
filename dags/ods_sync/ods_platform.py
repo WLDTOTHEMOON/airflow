@@ -182,7 +182,27 @@ def ods_platform():
         sql = generate_upsert_template('ods', 'ods_pf_handover')
         read_and_sync(path=path, sql=sql)
 
+    @task(retries=5, retry_delay=10, outlets=[Dataset('mysql://ods.ods_pf_tree')])
+    def ods_pf_tree(**kwargs):
+        begin_time = kwargs['data_interval_start']
+        end_time = kwargs['data_interval_end']
+        begin_time_fmt = begin_time.in_tz('Asia/Shanghai').format('YYYY-MM-DD HH:mm:ss')
+        end_time_fmt = end_time.in_tz('Asia/Shanghai').format('YYYY-MM-DD HH:mm:ss')
+        file_name = fetch_from_source(table='xlsd.tree', start_time=begin_time_fmt, end_time=end_time_fmt)
+        path = write_to_cos(file_name=file_name, path='platform/tree/')
+        sql = generate_upsert_template('ods', 'ods_pf_tree')
+        read_and_sync(path=path, sql=sql)
 
+    @task(retries=5, retry_delay=10, outlets=[Dataset('mysql://ods.ods_pf_suppliers_class')])
+    def ods_pf_suppliers_class(**kwargs):
+        begin_time = kwargs['data_interval_start']
+        end_time = kwargs['data_interval_end']
+        begin_time_fmt = begin_time.in_tz('Asia/Shanghai').format('YYYY-MM-DD HH:mm:ss')
+        end_time_fmt = end_time.in_tz('Asia/Shanghai').format('YYYY-MM-DD HH:mm:ss')
+        file_name = fetch_from_source(table='xlsd.suppliers_class', start_time=begin_time_fmt, end_time=end_time_fmt)
+        path = write_to_cos(file_name=file_name, path='platform/suppliers_class/')
+        sql = generate_upsert_template('ods', 'ods_pf_suppliers_class')
+        read_and_sync(path=path, sql=sql)
 
     @task(trigger_rule='all_done')
     def summary(**kwargs):
@@ -198,7 +218,8 @@ def ods_platform():
 
 
     [ods_pf_links(), ods_pf_suppliers(), ods_pf_users(), ods_pf_products(), ods_pf_reviews(), 
-    ods_pf_anchor_select_products(), ods_pf_anchor_info(), ods_pf_account_info(), ods_pf_handover()] >> \
+    ods_pf_anchor_select_products(), ods_pf_anchor_info(), ods_pf_account_info(), ods_pf_handover(),
+    ods_pf_suppliers_class(), ods_pf_tree()] >> \
     summary()
 
 
