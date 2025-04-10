@@ -256,9 +256,9 @@ ods_pf_supplier_class()
 
 @dag(schedule_interval='0 */2 * * *', start_date=pendulum.datetime(2023, 1, 1), catchup=False,
      default_args={'owner': 'Fang Yongchao'}, tags=['ods', 'sync', 'platform'], max_active_runs=1)
-def ods_platform_summary():
+def ods_pf_summary():
     @task(retries=5, retry_delay=10, outlets=[Dataset('mysql://ods.ods_pf_summary')])
-    def ods_platform_summary(**kwargs):
+    def ods_pf_summary(**kwargs):
         from airflow.models import Variable
         begin_time = kwargs['data_interval_start']
         end_time = kwargs['data_interval_end']
@@ -267,6 +267,6 @@ def ods_platform_summary():
 
         Variable.set('ods_platform_begin_time', begin_time_fmt)
         Variable.set('ods_platform_end_time', end_time_fmt)
-        logger.info(f'platform 相关数据ods更新完成 From {begin_time_fmt} to {end_time_fmt}')
-    ods_platform_summary()
-ods_platform_summary()
+        logger.info(f'platform 相关数据ods更新 From {begin_time_fmt} to {end_time_fmt}')
+    ods_pf_summary()
+ods_pf_summary()
