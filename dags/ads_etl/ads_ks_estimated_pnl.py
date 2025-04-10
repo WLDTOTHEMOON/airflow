@@ -9,7 +9,7 @@ default_args = {
     'retry_delay': 10
 }
 
-@dag(schedule=[Dataset('mysql://dws.dws_ks_big_tbl')], 
+@dag(schedule='0 1 * * * *', 
      start_date=pendulum.datetime(2023, 1, 1), catchup=False,
      default_args={'owner': 'Fang Yongchao'}, tags=['ads', 'etl'], max_active_runs=1)
 def ads_ks_estimated_pnl():

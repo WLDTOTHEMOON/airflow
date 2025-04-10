@@ -27,21 +27,17 @@ with cps_lst as (
         from dwd.dwd_ks_cps_order dkco
         where order_create_time between concat(current_date - interval 180 day, ' 00:00:00') and concat(current_date - interval 15 day, ' 23:59:59')
             and settlement_biz_type != '聚力计划'
+            and o_id not in (
+                select o_id
+                from ods.ods_cps_order_fake
+                union 
+                select o_id
+                from dwd.dwd_ks_recreation
+                union
+                select o_id
+                from dwd.dwd_ks_leader_commission_income
+            )
     ) src
-    left join (
-        select o_id
-        from ods.ods_cps_order_fake
-    ) cps_fake on src.o_id = cps_fake.o_id
-    left join (
-        select o_id
-        from dwd.dwd_ks_recreation
-        where order_create_time between concat(current_date - interval 180 day, ' 00:00:00') and concat(current_date - interval 15 day, ' 23:59:59')
-    ) recreation on src.o_id = recreation.o_id
-    left join (
-        select o_id
-        from dwd.dwd_ks_leader_commission_income
-        where order_create_time between concat(current_date - interval 180 day, ' 00:00:00') and concat(current_date - interval 15 day, ' 23:59:59')
-    ) lci on src.o_id = lci.o_id
     inner join (
         select
             account_id
