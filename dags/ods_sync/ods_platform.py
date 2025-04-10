@@ -199,7 +199,7 @@ def ods_platform():
         end_time = kwargs['data_interval_end']
         begin_time_fmt = begin_time.in_tz('Asia/Shanghai').format('YYYY-MM-DD HH:mm:ss')
         end_time_fmt = end_time.in_tz('Asia/Shanghai').format('YYYY-MM-DD HH:mm:ss')
-        file_name = fetch_from_source(table='xlsd.suppliers_class', start_time=begin_time_fmt, end_time=end_time_fmt)
+        file_name = fetch_from_source(table='xlsd.supplier_class', start_time=begin_time_fmt, end_time=end_time_fmt)
         path = write_to_cos(file_name=file_name, path='platform/suppliers_class/')
         sql = generate_upsert_template('ods', 'ods_pf_suppliers_class')
         read_and_sync(path=path, sql=sql)
