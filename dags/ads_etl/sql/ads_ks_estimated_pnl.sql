@@ -47,9 +47,6 @@ with cps_lst as (
             or line = '其它'
             or line is null
     ) ai on src.account_id = ai.account_id
-    where cps_fake.o_id is null
-        and recreation.o_id is null
-        and lci.o_id is null
 ),
 profit as (
     select
