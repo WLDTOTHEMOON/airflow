@@ -24,7 +24,8 @@ def dws_ks_big_tbl():
         conn_id='mysql',
         sql='sql/dws_ks_big_tbl.sql',
         default_args = default_args,
-        parameters={'order_create_time': order_create_time}
+        parameters={'order_create_time': order_create_time},
+        outlets=[Dataset('mysql://dws.dws_ks_big_tbl')]
     )
     
     dws_ks_big_tbl
