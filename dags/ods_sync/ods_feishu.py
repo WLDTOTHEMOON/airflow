@@ -7,17 +7,18 @@ logger = logging.getLogger(__name__)
 MYSQL_KEYWORDS = ['group']
 
 
+
+def excel_time_convert(timestamp):
+    import pandas as pd
+    import xlrd
+    if pd.isna(timestamp):
+        return None
+    else:
+        return xlrd.xldate_as_datetime(timestamp, 0)
+
 @dag(schedule_interval='0 */2 * * *', start_date=pendulum.datetime(2023, 1, 1), catchup=False,
      default_args={'owner': 'Fang Yongchao'}, tags=['ods', 'feishu', 'sync'])
-def ods_feishu():
-    def excel_time_convert(timestamp):
-        import pandas as pd
-        import xlrd
-        if pd.isna(timestamp):
-            return None
-        else:
-            return xlrd.xldate_as_datetime(timestamp, 0)
-
+def ods_fs_gmv_target():
     @task(retries=5, retry_delay=10, outlets=[Dataset('mysql://ods.ods_fs_gmv_target')])
     def ods_fs_gmv_target(**kwargs):
         from include.feishu.feishu_sheet import FeishuSheet
@@ -36,7 +37,12 @@ def ods_feishu():
             conn.execute(text('delete from ods.ods_fs_gmv_target'))
         raw_data.to_sql('ods_fs_gmv_target', engine, if_exists='append', index=False, schema='ods')
         logger.info(f'数据更新完成 {len(raw_data)} items')
+    ods_fs_gmv_target()
+ods_fs_gmv_target()
 
+@dag(schedule_interval='0 */2 * * *', start_date=pendulum.datetime(2023, 1, 1), catchup=False,
+     default_args={'owner': 'Fang Yongchao'}, tags=['ods', 'feishu', 'sync'])
+def ods_fs_links():
     @task(retries=5, retry_delay=10, outlets=[Dataset('mysql://ods.ods_fs_links')])
     def ods_fs_links(**kwargs):
         from include.feishu.feishu_sheet import FeishuSheet
@@ -72,7 +78,13 @@ def ods_feishu():
             conn.execute(text('delete from ods.ods_fs_links'))
         raw_data.to_sql('ods_fs_links', engine, if_exists='append', index=False, schema='ods')
         logger.info(f'数据更新完成 {len(raw_data)} items')
+    ods_fs_links()
+ods_fs_links()
 
+
+@dag(schedule_interval='0 */2 * * *', start_date=pendulum.datetime(2023, 1, 1), catchup=False,
+     default_args={'owner': 'Fang Yongchao'}, tags=['ods', 'feishu', 'sync'])
+def ods_fs_slice_account():
     @task(retries=5, retry_delay=10, outlets=[Dataset('mysql://ods.ods_fs_slice_account')])
     def ods_fs_slice_account(**kwargs):
         from include.feishu.feishu_sheet import FeishuSheet
@@ -96,11 +108,5 @@ def ods_feishu():
             conn.execute(text('delete from ods.ods_fs_slice_account'), conn)
         raw_data.to_sql('ods_fs_slice_account', engine, if_exists='append', index=False, schema='ods')
         logger.info(f'数据更新完成 {len(raw_data)} items')
-
-
-    ods_fs_gmv_target() >> ods_fs_slice_account()
-    ods_fs_links()
-    
-
-
-ods_feishu()
+    ods_fs_slice_account()
+ods_fs_slice_account()
