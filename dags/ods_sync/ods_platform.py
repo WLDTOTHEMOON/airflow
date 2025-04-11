@@ -78,176 +78,176 @@ def read_and_sync(path, sql):
         logger.info(f'完成数据同步 {len(data)} items')
         return 1
 
-@dag(schedule_interval='0 */2 * * *', start_date=pendulum.datetime(2023, 1, 1), catchup=False,
+@dag(schedule=[Dataset('mysql://ods.ods_pf_summary')], start_date=pendulum.datetime(2023, 1, 1), catchup=False,
      default_args={'owner': 'Fang Yongchao'}, tags=['ods', 'sync', 'platform'], max_active_runs=1)
 def ods_pf_links():
     @task(retries=5, retry_delay=10, outlets=[Dataset('mysql://ods.ods_pf_links')])
     def ods_pf_links(**kwargs):
-        begin_time = kwargs['data_interval_start']
-        end_time = kwargs['data_interval_end']
-        begin_time_fmt = begin_time.in_tz('Asia/Shanghai').format('YYYY-MM-DD HH:mm:ss')
-        end_time_fmt = end_time.in_tz('Asia/Shanghai').format('YYYY-MM-DD HH:mm:ss')
-        file_name = fetch_from_source(table='xlsd.link', start_time=begin_time_fmt, end_time=end_time_fmt)
+        from airflow.models import Variable
+        begin_time = Variable.get('ods_platform_begin_time',)
+        end_time = Variable.get('ods_platform_end_time')
+
+        file_name = fetch_from_source(table='xlsd.link', start_time=begin_time, end_time=end_time)
         path = write_to_cos(file_name=file_name, path='platform/links/')
         sql = generate_upsert_template('ods', 'ods_pf_links')
         read_and_sync(path=path, sql=sql)
     ods_pf_links()
 ods_pf_links()
 
-@dag(schedule_interval='0 */2 * * *', start_date=pendulum.datetime(2023, 1, 1), catchup=False,
+@dag(schedule=[Dataset('mysql://ods.ods_pf_summary')], start_date=pendulum.datetime(2023, 1, 1), catchup=False,
      default_args={'owner': 'Fang Yongchao'}, tags=['ods', 'sync', 'platform'], max_active_runs=1)
 def ods_pf_suppliers():
     @task(retries=5, retry_delay=10, outlets=[Dataset('mysql://ods.ods_pf_suppliers')])
     def ods_pf_suppliers(**kwargs):
-        begin_time = kwargs['data_interval_start']
-        end_time = kwargs['data_interval_end']
-        begin_time_fmt = begin_time.in_tz('Asia/Shanghai').format('YYYY-MM-DD HH:mm:ss')
-        end_time_fmt = end_time.in_tz('Asia/Shanghai').format('YYYY-MM-DD HH:mm:ss')
-        file_name = fetch_from_source(table='xlsd.suppliers', start_time=begin_time_fmt, end_time=end_time_fmt)
+        from airflow.models import Variable
+        begin_time = Variable.get('ods_platform_begin_time',)
+        end_time = Variable.get('ods_platform_end_time')
+
+        file_name = fetch_from_source(table='xlsd.suppliers', start_time=begin_time, end_time=end_time)
         path = write_to_cos(file_name=file_name, path='platform/suppliers/')
         sql = generate_upsert_template('ods', 'ods_pf_suppliers')
         read_and_sync(path=path, sql=sql)
     ods_pf_suppliers()
 ods_pf_suppliers()
 
-@dag(schedule_interval='0 */2 * * *', start_date=pendulum.datetime(2023, 1, 1), catchup=False,
+@dag(schedule=[Dataset('mysql://ods.ods_pf_summary')], start_date=pendulum.datetime(2023, 1, 1), catchup=False,
      default_args={'owner': 'Fang Yongchao'}, tags=['ods', 'sync', 'platform'], max_active_runs=1)
 def ods_pf_products():
     @task(retries=5, retry_delay=10, outlets=[Dataset('mysql://ods.ods_pf_products')])
     def ods_pf_products(**kwargs):
-        begin_time = kwargs['data_interval_start']
-        end_time = kwargs['data_interval_end']
-        begin_time_fmt = begin_time.in_tz('Asia/Shanghai').format('YYYY-MM-DD HH:mm:ss')
-        end_time_fmt = end_time.in_tz('Asia/Shanghai').format('YYYY-MM-DD HH:mm:ss')
-        file_name = fetch_from_source(table='xlsd.products', start_time=begin_time_fmt, end_time=end_time_fmt)
+        from airflow.models import Variable
+        begin_time = Variable.get('ods_platform_begin_time',)
+        end_time = Variable.get('ods_platform_end_time')
+        
+        file_name = fetch_from_source(table='xlsd.products', start_time=begin_time, end_time=end_time)
         path = write_to_cos(file_name=file_name, path='platform/products/')
         sql = generate_upsert_template('ods', 'ods_pf_products')
         read_and_sync(path=path, sql=sql)
     ods_pf_products()
 ods_pf_products()
 
-@dag(schedule_interval='0 */2 * * *', start_date=pendulum.datetime(2023, 1, 1), catchup=False,
+@dag(schedule=[Dataset('mysql://ods.ods_pf_summary')], start_date=pendulum.datetime(2023, 1, 1), catchup=False,
      default_args={'owner': 'Fang Yongchao'}, tags=['ods', 'sync', 'platform'], max_active_runs=1)
 def ods_pf_reviews():
     @task(retries=5, retry_delay=10, outlets=[Dataset('mysql://ods.ods_pf_reviews')])
     def ods_pf_reviews(**kwargs):
-        begin_time = kwargs['data_interval_start']
-        end_time = kwargs['data_interval_end']
-        begin_time_fmt = begin_time.in_tz('Asia/Shanghai').format('YYYY-MM-DD HH:mm:ss')
-        end_time_fmt = end_time.in_tz('Asia/Shanghai').format('YYYY-MM-DD HH:mm:ss')
-        file_name = fetch_from_source(table='xlsd.review', start_time=begin_time_fmt, end_time=end_time_fmt)
+        from airflow.models import Variable
+        begin_time = Variable.get('ods_platform_begin_time',)
+        end_time = Variable.get('ods_platform_end_time')
+        
+        file_name = fetch_from_source(table='xlsd.review', start_time=begin_time, end_time=end_time)
         path = write_to_cos(file_name=file_name, path='platform/reviews/')
         sql = generate_upsert_template('ods', 'ods_pf_reviews')
         read_and_sync(path=path, sql=sql)
     ods_pf_reviews()
 ods_pf_reviews()
 
-@dag(schedule_interval='0 */2 * * *', start_date=pendulum.datetime(2023, 1, 1), catchup=False,
+@dag(schedule=[Dataset('mysql://ods.ods_pf_summary')], start_date=pendulum.datetime(2023, 1, 1), catchup=False,
      default_args={'owner': 'Fang Yongchao'}, tags=['ods', 'sync', 'platform'], max_active_runs=1)
 def ods_pf_anchor_select_products():
     @task(retries=5, retry_delay=10, outlets=[Dataset('mysql://ods.ods_pf_anchor_select_products')])
     def ods_pf_anchor_select_products(**kwargs):
-        begin_time = kwargs['data_interval_start']
-        end_time = kwargs['data_interval_end']
-        begin_time_fmt = begin_time.in_tz('Asia/Shanghai').format('YYYY-MM-DD HH:mm:ss')
-        end_time_fmt = end_time.in_tz('Asia/Shanghai').format('YYYY-MM-DD HH:mm:ss')
-        file_name = fetch_from_source(table='xlsd.anchor_select_product', start_time=begin_time_fmt, end_time=end_time_fmt)
+        from airflow.models import Variable
+        begin_time = Variable.get('ods_platform_begin_time',)
+        end_time = Variable.get('ods_platform_end_time')
+        
+        file_name = fetch_from_source(table='xlsd.anchor_select_product', start_time=begin_time, end_time=end_time)
         path = write_to_cos(file_name=file_name, path='platform/anchor_select_products/')
         sql = generate_upsert_template('ods', 'ods_pf_anchor_select_products')
         read_and_sync(path=path, sql=sql)
     ods_pf_anchor_select_products()
 ods_pf_anchor_select_products()
 
-@dag(schedule_interval='0 */2 * * *', start_date=pendulum.datetime(2023, 1, 1), catchup=False,
+@dag(schedule=[Dataset('mysql://ods.ods_pf_summary')], start_date=pendulum.datetime(2023, 1, 1), catchup=False,
      default_args={'owner': 'Fang Yongchao'}, tags=['ods', 'sync', 'platform'], max_active_runs=1)
 def ods_pf_anchor_info():
     @task(retries=5, retry_delay=10, outlets=[Dataset('mysql://ods.ods_pf_anchor_info')])
     def ods_pf_anchor_info(**kwargs):
-        begin_time = kwargs['data_interval_start']
-        end_time = kwargs['data_interval_end']
-        begin_time_fmt = begin_time.in_tz('Asia/Shanghai').format('YYYY-MM-DD HH:mm:ss')
-        end_time_fmt = end_time.in_tz('Asia/Shanghai').format('YYYY-MM-DD HH:mm:ss')
-        file_name = fetch_from_source(table='xlsd.anchor_info', start_time=begin_time_fmt, end_time=end_time_fmt)
+        from airflow.models import Variable
+        begin_time = Variable.get('ods_platform_begin_time',)
+        end_time = Variable.get('ods_platform_end_time')
+        
+        file_name = fetch_from_source(table='xlsd.anchor_info', start_time=begin_time, end_time=end_time)
         path = write_to_cos(file_name=file_name, path='platform/anchor_info/')
         sql = generate_upsert_template('ods', 'ods_pf_anchor_info')
         read_and_sync(path=path, sql=sql)
     ods_pf_anchor_info()
 ods_pf_anchor_info()
 
-@dag(schedule_interval='0 */2 * * *', start_date=pendulum.datetime(2023, 1, 1), catchup=False,
+@dag(schedule=[Dataset('mysql://ods.ods_pf_summary')], start_date=pendulum.datetime(2023, 1, 1), catchup=False,
      default_args={'owner': 'Fang Yongchao'}, tags=['ods', 'sync', 'platform'], max_active_runs=1)
 def ods_pf_account_info():
     @task(retries=5, retry_delay=10, outlets=[Dataset('mysql://ods.ods_pf_account_info')])
     def ods_pf_account_info(**kwargs):
-        begin_time = kwargs['data_interval_start']
-        end_time = kwargs['data_interval_end']
-        begin_time_fmt = begin_time.in_tz('Asia/Shanghai').format('YYYY-MM-DD HH:mm:ss')
-        end_time_fmt = end_time.in_tz('Asia/Shanghai').format('YYYY-MM-DD HH:mm:ss')
-        file_name = fetch_from_source(table='xlsd.account_info', start_time=begin_time_fmt, end_time=end_time_fmt, key_word='update_at')
+        from airflow.models import Variable
+        begin_time = Variable.get('ods_platform_begin_time',)
+        end_time = Variable.get('ods_platform_end_time')
+        
+        file_name = fetch_from_source(table='xlsd.account_info', start_time=begin_time, end_time=end_time, key_word='update_at')
         path = write_to_cos(file_name=file_name, path='platform/account_info/')
         sql = generate_upsert_template('ods', 'ods_pf_account_info')
         read_and_sync(path=path, sql=sql)
     ods_pf_account_info()
 ods_pf_account_info()
 
-@dag(schedule_interval='0 */2 * * *', start_date=pendulum.datetime(2023, 1, 1), catchup=False,
+@dag(schedule=[Dataset('mysql://ods.ods_pf_summary')], start_date=pendulum.datetime(2023, 1, 1), catchup=False,
      default_args={'owner': 'Fang Yongchao'}, tags=['ods', 'sync', 'platform'], max_active_runs=1)
 def ods_pf_users():
     @task(retries=5, retry_delay=10, outlets=[Dataset('mysql://ods.ods_pf_users')])
     def ods_pf_users(**kwargs):
-        begin_time = kwargs['data_interval_start']
-        end_time = kwargs['data_interval_end']
-        begin_time_fmt = begin_time.in_tz('Asia/Shanghai').format('YYYY-MM-DD HH:mm:ss')
-        end_time_fmt = end_time.in_tz('Asia/Shanghai').format('YYYY-MM-DD HH:mm:ss')
-        file_name = fetch_from_source(table='xlsd.users', start_time=begin_time_fmt, end_time=end_time_fmt)
+        from airflow.models import Variable
+        begin_time = Variable.get('ods_platform_begin_time',)
+        end_time = Variable.get('ods_platform_end_time')
+        
+        file_name = fetch_from_source(table='xlsd.users', start_time=begin_time, end_time=end_time)
         path = write_to_cos(file_name=file_name, path='platform/users/')
         sql = generate_upsert_template('ods', 'ods_pf_users')
         read_and_sync(path=path, sql=sql)
     ods_pf_users()
 ods_pf_users()
 
-@dag(schedule_interval='0 */2 * * *', start_date=pendulum.datetime(2023, 1, 1), catchup=False,
+@dag(schedule=[Dataset('mysql://ods.ods_pf_summary')], start_date=pendulum.datetime(2023, 1, 1), catchup=False,
      default_args={'owner': 'Fang Yongchao'}, tags=['ods', 'sync', 'platform'], max_active_runs=1)
 def ods_pf_handover():
     @task(retries=5, retry_delay=10, outlets=[Dataset('mysql://ods.ods_pf_handover')])
     def ods_pf_handover(**kwargs):
-        begin_time = kwargs['data_interval_start']
-        end_time = kwargs['data_interval_end']
-        begin_time_fmt = begin_time.in_tz('Asia/Shanghai').format('YYYY-MM-DD HH:mm:ss')
-        end_time_fmt = end_time.in_tz('Asia/Shanghai').format('YYYY-MM-DD HH:mm:ss')
-        file_name = fetch_from_source(table='xlsd.handover', start_time=begin_time_fmt, end_time=end_time_fmt)
+        from airflow.models import Variable
+        begin_time = Variable.get('ods_platform_begin_time',)
+        end_time = Variable.get('ods_platform_end_time')
+        
+        file_name = fetch_from_source(table='xlsd.handover', start_time=begin_time, end_time=end_time)
         path = write_to_cos(file_name=file_name, path='platform/handover/')
         sql = generate_upsert_template('ods', 'ods_pf_handover')
         read_and_sync(path=path, sql=sql)
     ods_pf_handover()
 ods_pf_handover()
 
-@dag(schedule_interval='0 */2 * * *', start_date=pendulum.datetime(2023, 1, 1), catchup=False,
+@dag(schedule=[Dataset('mysql://ods.ods_pf_summary')], start_date=pendulum.datetime(2023, 1, 1), catchup=False,
      default_args={'owner': 'Fang Yongchao'}, tags=['ods', 'sync', 'platform'], max_active_runs=1)
 def ods_pf_tree():
     @task(retries=5, retry_delay=10, outlets=[Dataset('mysql://ods.ods_pf_tree')])
     def ods_pf_tree(**kwargs):
-        begin_time = kwargs['data_interval_start']
-        end_time = kwargs['data_interval_end']
-        begin_time_fmt = begin_time.in_tz('Asia/Shanghai').format('YYYY-MM-DD HH:mm:ss')
-        end_time_fmt = end_time.in_tz('Asia/Shanghai').format('YYYY-MM-DD HH:mm:ss')
-        file_name = fetch_from_source(table='xlsd.tree', start_time=begin_time_fmt, end_time=end_time_fmt)
+        from airflow.models import Variable
+        begin_time = Variable.get('ods_platform_begin_time',)
+        end_time = Variable.get('ods_platform_end_time')
+        
+        file_name = fetch_from_source(table='xlsd.tree', start_time=begin_time, end_time=end_time)
         path = write_to_cos(file_name=file_name, path='platform/tree/')
         sql = generate_upsert_template('ods', 'ods_pf_tree')
         read_and_sync(path=path, sql=sql)
     ods_pf_tree()
 ods_pf_tree()
 
-@dag(schedule_interval='0 */2 * * *', start_date=pendulum.datetime(2023, 1, 1), catchup=False,
+@dag(schedule=[Dataset('mysql://ods.ods_pf_summary')], start_date=pendulum.datetime(2023, 1, 1), catchup=False,
      default_args={'owner': 'Fang Yongchao'}, tags=['ods', 'sync', 'platform'], max_active_runs=1)
 def ods_pf_supplier_class():
     @task(retries=5, retry_delay=10, outlets=[Dataset('mysql://ods.ods_pf_suppliers_class')])
     def ods_pf_supplier_class(**kwargs):
-        begin_time = kwargs['data_interval_start']
-        end_time = kwargs['data_interval_end']
-        begin_time_fmt = begin_time.in_tz('Asia/Shanghai').format('YYYY-MM-DD HH:mm:ss')
-        end_time_fmt = end_time.in_tz('Asia/Shanghai').format('YYYY-MM-DD HH:mm:ss')
-        file_name = fetch_from_source(table='xlsd.supplier_class', start_time=begin_time_fmt, end_time=end_time_fmt)
+        from airflow.models import Variable
+        begin_time = Variable.get('ods_platform_begin_time',)
+        end_time = Variable.get('ods_platform_end_time')
+        
+        file_name = fetch_from_source(table='xlsd.supplier_class', start_time=begin_time, end_time=end_time)
         path = write_to_cos(file_name=file_name, path='platform/supplier_class/')
         sql = generate_upsert_template('ods', 'ods_pf_supplier_class')
         read_and_sync(path=path, sql=sql)
