@@ -127,7 +127,8 @@ def dwd_ks_item_belong():
 dwd_ks_item_belong()
 
 
-@dag(schedule=[Dataset('mysql://ods.ods_pf_suppliers'), Dataset('mysql://ods.ods_pf_handover'), Dataset('mysql://ods.ods_pf_users')], 
+@dag(schedule=[Dataset('mysql://ods.ods_pf_suppliers'), Dataset('mysql://ods.ods_pf_handover'), Dataset('mysql://ods.ods_pf_users'),
+               Dataset('mysql://ods.ods_item_category')], 
      start_date=pendulum.datetime(2023, 1, 1), catchup=False,
      default_args={'owner': 'Fang Yongchao'}, tags=['dwd', 'etl'],
      max_active_tasks=4, max_active_runs=1)

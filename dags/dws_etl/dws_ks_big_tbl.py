@@ -10,7 +10,7 @@ default_args = {
 }
 
 @dag(schedule=[Dataset('mysql://dwd.dwd_ks_cps_order'), Dataset('mysql://dwd.dwd_ks_leader_commission_income'), Dataset('mysql://dwd.dwd_ks_recreation'),
-               Dataset('mysql://dim.dim_ks_account_info'), Dataset('mysql://dwd.dwd_ks_item_belong')], 
+               Dataset('mysql://dim.dim_ks_account_info'), Dataset('mysql://dwd.dwd_ks_item_belong'), Dataset('mysql://ods.ods_special_allocation')], 
      start_date=pendulum.datetime(2023, 1, 1), catchup=False,
      default_args={'owner': 'Fang Yongchao'}, tags=['dws', 'etl'], max_active_runs=1)
 def dws_ks_big_tbl():
