@@ -4,7 +4,12 @@ import logging
 import pendulum
 
 logger = logging.getLogger(__name__)
-default_args = {
+from include.service.message import task_failure_callback
+dag_default_args = {
+    'owner': 'Fang Yongchao',
+    'on_failure_callback': task_failure_callback
+}
+task_default_args = {
     'retries': 5, 
     'retry_delay': 10
 }
@@ -12,7 +17,7 @@ default_args = {
 @dag(schedule=[Dataset('mysql://dim.dim_ks_account_info'), Dataset('mysql://dwd.dwd_ks_cps_order'), Dataset('mysql://ods.ods_fs_slice_account'),
                Dataset('mysql://dwd.dwd_ks_mcn_order')], 
      start_date=pendulum.datetime(2023, 1, 1), catchup=False,
-     default_args={'owner': 'Fang Yongchao'}, tags=['dws', 'etl'], max_active_runs=1)
+     default_args=dag_default_args, tags=['dws', 'etl'], max_active_runs=1)
 def dws_ks_slice_mcn():
     from airflow.models import Variable
     from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
@@ -23,7 +28,7 @@ def dws_ks_slice_mcn():
         task_id='dws_ks_slice_mcn',
         conn_id='mysql',
         sql='sql/dws_ks_slice_mcn.sql',
-        default_args = default_args,
+        default_args = task_default_args,
         parameters={'order_create_time': order_create_time}
     )
     

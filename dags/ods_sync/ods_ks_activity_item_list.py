@@ -9,11 +9,15 @@ MYSQL_KEYWORDS = ['group']
 LEADER_OPEN_ID = Variable.get('leader_open_id')
 SCHEMA = 'ods'
 TABLE = 'ods_ks_activity_item_list'
-
+from include.service.message import task_failure_callback
+default_args = {
+    'owner': 'Fang Yongchao',
+    'on_failure_callback': task_failure_callback
+}
 
 @dag(schedule_interval=[Dataset('mysql://ods.ods_ks_activity_info')],
      start_date=pendulum.datetime(2023, 1, 1), catchup=False,
-     default_args={'owner': 'Fang Yongchao'}, tags=['ods', 'sync', 'kuaishou'], max_active_tasks=3, max_active_runs=1)
+     default_args=default_args, tags=['ods', 'sync', 'kuaishou'], max_active_tasks=3, max_active_runs=1)
 def ods_ks_activity_item_list():
     def timestamp2datetime(timestamp):
         try:

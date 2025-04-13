@@ -6,7 +6,11 @@ import pendulum
 
 logger = logging.getLogger(__name__)
 MYSQL_KEYWORDS = ['group']
-
+from include.service.message import task_failure_callback
+default_args = {
+    'owner': 'Fang Yongchao',
+    'on_failure_callback': task_failure_callback
+}
 
 def generate_upsert_template(schema, table):
     import pandas as pd
@@ -92,7 +96,7 @@ def get_child_folder(path):
     return [each['Prefix'] for each in response['CommonPrefixes']]
 
 @dag(schedule_interval='0 */2 * * *', start_date=pendulum.datetime(2023, 1, 1), catchup=False,
-     default_args={'owner': 'Fang Yongchao'}, tags=['ods', 'sync', 'crawler'], max_active_runs=1)
+     default_args=default_args, tags=['ods', 'sync', 'crawler'], max_active_runs=1)
 def ods_crawler_leader_commission_income():
     @task(retries=5, retry_delay=10, outlets=[Dataset('mysql://ods.ods_crawler_leader_commission_income')])
     def ods_crawler_leader_commission_income():
@@ -150,7 +154,7 @@ def ods_crawler_leader_commission_income():
 ods_crawler_leader_commission_income()
 
 @dag(schedule_interval='0 */2 * * *', start_date=pendulum.datetime(2023, 1, 1), catchup=False,
-     default_args={'owner': 'Fang Yongchao'}, tags=['ods', 'sync', 'crawler'], max_active_runs=1)
+     default_args=default_args, tags=['ods', 'sync', 'crawler'], max_active_runs=1)
 def ods_crawler_recreation():
     @task(retries=5, retry_delay=10, outlets=[Dataset('mysql://ods.ods_crawler_recreation')])
     def ods_crawler_recreation():
@@ -211,7 +215,7 @@ def ods_crawler_recreation():
 ods_crawler_recreation()
 
 @dag(schedule_interval='0 */2 * * *', start_date=pendulum.datetime(2023, 1, 1), catchup=False,
-     default_args={'owner': 'Fang Yongchao'}, tags=['ods', 'sync', 'crawler'], max_active_runs=1)
+     default_args=default_args, tags=['ods', 'sync', 'crawler'], max_active_runs=1)
 def ods_crawler_mcn_order():
     @task(retries=5, retry_delay=10, outlets=[Dataset('mysql://ods.ods_crawler_mcn_order')])
     def ods_crawler_mcn_order():

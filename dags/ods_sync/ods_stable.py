@@ -3,10 +3,16 @@ from airflow import Dataset
 import logging
 import pendulum
 
+
 logger = logging.getLogger(__name__)
+from include.service.message import task_failure_callback
+default_args = {
+    'owner': 'Fang Yongchao',
+    'on_failure_callback': task_failure_callback
+}
 
 @dag(schedule_interval='0 */2 * * *', start_date=pendulum.datetime(2023, 1, 1), catchup=False,
-     default_args={'owner': 'Fang Yongchao'}, tags=['ods', 'sync', 'platform'], max_active_runs=1)
+     default_args=default_args, tags=['ods', 'sync', 'platform'], max_active_runs=1)
 def ods_item_category():
     @task(retries=5, retry_delay=10, outlets=[Dataset('mysql://ods.ods_item_category')])
     def ods_item_category(**kwargs):
@@ -16,7 +22,7 @@ ods_item_category()
 
 
 @dag(schedule_interval='0 */2 * * *', start_date=pendulum.datetime(2023, 1, 1), catchup=False,
-     default_args={'owner': 'Fang Yongchao'}, tags=['ods', 'sync', 'platform'], max_active_runs=1)
+     default_args=default_args, tags=['ods', 'sync', 'platform'], max_active_runs=1)
 def ods_special_allocation():
     @task(retries=5, retry_delay=10, outlets=[Dataset('mysql://ods.ods_special_allocation')])
     def ods_special_allocation(**kwargs):
@@ -26,7 +32,7 @@ ods_special_allocation()
 
 
 @dag(schedule_interval='0 */2 * * *', start_date=pendulum.datetime(2023, 1, 1), catchup=False,
-     default_args={'owner': 'Fang Yongchao'}, tags=['ods', 'sync', 'platform'], max_active_runs=1)
+     default_args=default_args, tags=['ods', 'sync', 'platform'], max_active_runs=1)
 def ods_cps_order_fake():
     @task(retries=5, retry_delay=10, outlets=[Dataset('mysql://ods.ods_cps_order_fake')])
     def ods_cps_order_fake(**kwargs):
