@@ -1,6 +1,7 @@
 from airflow.decorators import dag, task
 from airflow.models import Variable
 from airflow import Dataset
+from include.service.message import task_failure_callback
 import logging
 import pendulum
 
@@ -9,15 +10,16 @@ MYSQL_KEYWORDS = ['group']
 LEADER_OPEN_ID = Variable.get('leader_open_id')
 SCHEMA = 'ods'
 TABLE = 'ods_ks_activity_item_list'
-from include.service.message import task_failure_callback
 default_args = {
     'owner': 'Fang Yongchao',
-    'on_failure_callback': task_failure_callback
+    'on_failure_callback': task_failure_callback,
+    'retries': 10,
+    'retry_delay': 10
 }
 
 @dag(schedule_interval=[Dataset('mysql://ods.ods_ks_activity_info')],
      start_date=pendulum.datetime(2023, 1, 1), catchup=False,
-     default_args=default_args, tags=['ods', 'sync', 'kuaishou'], max_active_tasks=3, max_active_runs=1)
+     default_args=default_args, tags=['ods', 'kuaishou'], max_active_tasks=3, max_active_runs=1)
 def ods_ks_activity_item_list():
     def timestamp2datetime(timestamp):
         try:
@@ -52,7 +54,7 @@ def ods_ks_activity_item_list():
         '''
         return sql
 
-    @task(retries=5, retry_delay=10)
+    @task()
     def get_token():
         from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
         sql = f'''
@@ -72,7 +74,7 @@ def ods_ks_activity_item_list():
             'updated_at': tokens[0][2]
         }
     
-    @task(retries=5, retry_delay=10)
+    @task()
     def update_token(tokens):
         from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
         from airflow.models import Variable
@@ -107,7 +109,7 @@ def ods_ks_activity_item_list():
             ).execute({})
             return new_tokens
 
-    @task(retries=10, retry_delay=10)
+    @task()
     def get_activity_list(**kwargs):
         from include.database.mysql import engine
         import pandas as pd
@@ -126,7 +128,7 @@ def ods_ks_activity_item_list():
         else:
             return []
 
-    @task(trigger_rule='all_done', retries=10, retry_delay=10)
+    @task(trigger_rule='all_done')
     def fetch_write_data(tokens, activity_id, **kwargs):
         from qcloud_cos import CosConfig, CosS3Client
         from airflow.models import Variable
@@ -155,7 +157,7 @@ def ods_ks_activity_item_list():
             'path': path
         }
 
-    @task(trigger_rule='all_done', retries=10, retry_delay=10)
+    @task(trigger_rule='all_done')
     def read_sync_data(path):
         from qcloud_cos import CosConfig, CosS3Client
         from airflow.models import Variable
@@ -216,7 +218,7 @@ def ods_ks_activity_item_list():
             logger.info('数据为空，跳过同步')
             return 0
 
-    @task(trigger_rule='all_done', retries=10, retry_delay=10, outlets=[Dataset('mysql://ods.ods_ks_activity_item_list')])
+    @task(trigger_rule='all_done', outlets=[Dataset('mysql://ods.ods_ks_activity_item_list')])
     def summary(num):
         if num:
             total = sum(num)

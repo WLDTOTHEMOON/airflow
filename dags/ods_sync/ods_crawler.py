@@ -1,15 +1,17 @@
 from airflow.decorators import task, dag
 from airflow import Dataset
+from include.service.message import task_failure_callback
 import logging
 import pendulum
 
 
 logger = logging.getLogger(__name__)
 MYSQL_KEYWORDS = ['group']
-from include.service.message import task_failure_callback
 default_args = {
     'owner': 'Fang Yongchao',
-    'on_failure_callback': task_failure_callback
+    'on_failure_callback': task_failure_callback,
+    'retries': 10,
+    'retry_delay': 10
 }
 
 def generate_upsert_template(schema, table):
@@ -36,6 +38,7 @@ def generate_upsert_template(schema, table):
     '''
     return sql
 
+
 def get_flag(path):
     from qcloud_cos import CosConfig, CosS3Client
     from airflow.models import Variable
@@ -47,6 +50,7 @@ def get_flag(path):
     raw_data = raw_data['Body'].get_raw_stream().read()
     raw_data = json.loads(raw_data)
     return raw_data['updated']
+
 
 def update_flag(path, flag):
     from qcloud_cos import CosConfig, CosS3Client
@@ -62,6 +66,7 @@ def update_flag(path, flag):
         Key=path
     )
     return flag
+
 
 def read_data(path, suffix):
     from qcloud_cos import CosConfig, CosS3Client
@@ -87,6 +92,7 @@ def read_data(path, suffix):
         raw_data = pd.read_excel(BytesIO(raw_data))
     return raw_data
 
+
 def get_child_folder(path):
     from qcloud_cos import CosConfig, CosS3Client
     from airflow.models import Variable
@@ -95,10 +101,11 @@ def get_child_folder(path):
     response = client.list_objects(Bucket=cos_config['bucket'], Prefix=path, Delimiter='/')
     return [each['Prefix'] for each in response['CommonPrefixes']]
 
+
 @dag(schedule_interval='0 */2 * * *', start_date=pendulum.datetime(2023, 1, 1), catchup=False,
-     default_args=default_args, tags=['ods', 'sync', 'crawler'], max_active_runs=1)
+     default_args=default_args, tags=['ods', 'src', 'crawler'], max_active_runs=1)
 def ods_crawler_leader_commission_income():
-    @task(retries=5, retry_delay=10, outlets=[Dataset('mysql://ods.ods_crawler_leader_commission_income')])
+    @task(outlets=[Dataset('mysql://ods.ods_crawler_leader_commission_income')])
     def ods_crawler_leader_commission_income():
         from include.database.mysql import engine
         from sqlalchemy import text
@@ -153,10 +160,11 @@ def ods_crawler_leader_commission_income():
     ods_crawler_leader_commission_income()
 ods_crawler_leader_commission_income()
 
+
 @dag(schedule_interval='0 */2 * * *', start_date=pendulum.datetime(2023, 1, 1), catchup=False,
-     default_args=default_args, tags=['ods', 'sync', 'crawler'], max_active_runs=1)
+     default_args=default_args, tags=['ods', 'src', 'crawler'], max_active_runs=1)
 def ods_crawler_recreation():
-    @task(retries=5, retry_delay=10, outlets=[Dataset('mysql://ods.ods_crawler_recreation')])
+    @task(outlets=[Dataset('mysql://ods.ods_crawler_recreation')])
     def ods_crawler_recreation():
         from include.database.mysql import engine
         from sqlalchemy import text
@@ -214,10 +222,11 @@ def ods_crawler_recreation():
     ods_crawler_recreation()
 ods_crawler_recreation()
 
+
 @dag(schedule_interval='0 */2 * * *', start_date=pendulum.datetime(2023, 1, 1), catchup=False,
-     default_args=default_args, tags=['ods', 'sync', 'crawler'], max_active_runs=1)
+     default_args=default_args, tags=['ods', 'src', 'crawler'], max_active_runs=1)
 def ods_crawler_mcn_order():
-    @task(retries=5, retry_delay=10, outlets=[Dataset('mysql://ods.ods_crawler_mcn_order')])
+    @task(outlets=[Dataset('mysql://ods.ods_crawler_mcn_order')])
     def ods_crawler_mcn_order():
         from include.database.mysql import engine
         from sqlalchemy import text

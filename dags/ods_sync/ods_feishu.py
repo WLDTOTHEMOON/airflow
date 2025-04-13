@@ -1,14 +1,16 @@
 from airflow.decorators import dag, task
 from airflow import Dataset
+from include.service.message import task_failure_callback
 import logging
 import pendulum
 
 logger = logging.getLogger(__name__)
 MYSQL_KEYWORDS = ['group']
-from include.service.message import task_failure_callback
 default_args = {
     'owner': 'Fang Yongchao',
-    'on_failure_callback': task_failure_callback
+    'on_failure_callback': task_failure_callback,
+    'retries': 10,
+    'retry_delay': 10
 }
 
 
@@ -21,9 +23,9 @@ def excel_time_convert(timestamp):
         return xlrd.xldate_as_datetime(timestamp, 0)
 
 @dag(schedule_interval='0 */2 * * *', start_date=pendulum.datetime(2023, 1, 1), catchup=False,
-     default_args=default_args, tags=['ods', 'feishu', 'sync'])
+     default_args=default_args, tags=['ods', 'feishu', 'src'])
 def ods_fs_gmv_target():
-    @task(retries=5, retry_delay=10, outlets=[Dataset('mysql://ods.ods_fs_gmv_target')])
+    @task(outlets=[Dataset('mysql://ods.ods_fs_gmv_target')])
     def ods_fs_gmv_target(**kwargs):
         from include.feishu.feishu_sheet import FeishuSheet
         from airflow.models import Variable
@@ -45,9 +47,9 @@ def ods_fs_gmv_target():
 ods_fs_gmv_target()
 
 @dag(schedule_interval='0 */2 * * *', start_date=pendulum.datetime(2023, 1, 1), catchup=False,
-     default_args=default_args, tags=['ods', 'feishu', 'sync'])
+     default_args=default_args, tags=['ods', 'feishu', 'src'])
 def ods_fs_links():
-    @task(retries=5, retry_delay=10, outlets=[Dataset('mysql://ods.ods_fs_links')])
+    @task(outlets=[Dataset('mysql://ods.ods_fs_links')])
     def ods_fs_links(**kwargs):
         from include.feishu.feishu_sheet import FeishuSheet
         from airflow.models import Variable
@@ -87,9 +89,9 @@ ods_fs_links()
 
 
 @dag(schedule_interval='0 */2 * * *', start_date=pendulum.datetime(2023, 1, 1), catchup=False,
-     default_args=default_args, tags=['ods', 'feishu', 'sync'])
+     default_args=default_args, tags=['ods', 'feishu', 'src'])
 def ods_fs_slice_account():
-    @task(retries=5, retry_delay=10, outlets=[Dataset('mysql://ods.ods_fs_slice_account')])
+    @task(outlets=[Dataset('mysql://ods.ods_fs_slice_account')])
     def ods_fs_slice_account(**kwargs):
         from include.feishu.feishu_sheet import FeishuSheet
         from airflow.models import Variable

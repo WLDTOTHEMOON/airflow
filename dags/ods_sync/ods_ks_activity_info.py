@@ -1,6 +1,7 @@
 from airflow.decorators import dag, task
 from airflow.models import Variable
 from airflow import Dataset
+from include.service.message import task_failure_callback
 import logging
 import pendulum
 
@@ -9,14 +10,16 @@ MYSQL_KEYWORDS = ['group']
 LEADER_OPEN_ID = Variable.get('leader_open_id')
 SCHEMA = 'ods'
 TABLE = 'ods_ks_activity_info'
-from include.service.message import task_failure_callback
+
 default_args = {
     'owner': 'Fang Yongchao',
-    'on_failure_callback': task_failure_callback
+    'on_failure_callback': task_failure_callback,
+    'retries': 10,
+    'retry_delay': 10
 }
 
 @dag(schedule_interval='0 */2 * * *', start_date=pendulum.datetime(2023, 1, 1), catchup=False,
-     default_args=default_args, tags=['ods', 'sync', 'kuaishou'],
+     default_args=default_args, tags=['ods', 'src', 'kuaishou'],
      max_active_tasks=3, max_active_runs=1)
 def ods_ks_activity_info():
     def timestamp2datetime(timestamp):
@@ -52,7 +55,7 @@ def ods_ks_activity_info():
         '''
         return sql
 
-    @task(retries=5, retry_delay=10)
+    @task()
     def get_token():
         from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
         sql = f'''
@@ -72,7 +75,7 @@ def ods_ks_activity_info():
             'updated_at': tokens[0][2]
         }
     
-    @task(retries=5, retry_delay=10)
+    @task()
     def update_token(tokens):
         from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
         from airflow.models import Variable
@@ -107,7 +110,7 @@ def ods_ks_activity_info():
             ).execute({})
             return new_tokens
 
-    @task(retries=5, retry_delay=10)
+    @task()
     def fetch_write_data(tokens, **kwargs):
         from qcloud_cos import CosConfig, CosS3Client
         from airflow.models import Variable
@@ -133,7 +136,7 @@ def ods_ks_activity_info():
         )
         return path
 
-    @task(retries=5, retry_delay=10, outlets=[Dataset('mysql://ods.ods_ks_activity_info')])
+    @task(outlets=[Dataset('mysql://ods.ods_ks_activity_info')])
     def read_sync_data(path):
         from qcloud_cos import CosConfig, CosS3Client
         from airflow.models import Variable

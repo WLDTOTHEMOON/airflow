@@ -12,7 +12,9 @@ SCHEMA = 'ods'
 TABLE = 'ods_ks_leader_order'
 default_args = {
     'owner': 'Fang Yongchao',
-    'on_failure_callback': task_failure_callback
+    'on_failure_callback': task_failure_callback,
+    'retries': 10,
+    'retry_delay': 30
 }
 
 @dag(schedule_interval='0 */2 * * *', start_date=pendulum.datetime(2023, 1, 1), catchup=False,
@@ -52,7 +54,7 @@ def ods_ks_leader_order():
         '''
         return sql
 
-    @task(retries=10, retry_delay=10)
+    @task()
     def get_token():
         from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
         sql = f'''
@@ -72,7 +74,7 @@ def ods_ks_leader_order():
             'updated_at': tokens[0][2]
         }
     
-    @task(retries=10, retry_delay=10)
+    @task()
     def update_token(tokens):
         from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
         from airflow.models import Variable
@@ -107,7 +109,7 @@ def ods_ks_leader_order():
             ).execute({})
             return new_tokens
 
-    @task(retries=10, retry_delay=10)
+    @task()
     def fetch_write_data(tokens, **kwargs):
         from qcloud_cos import CosConfig, CosS3Client
         from airflow.models import Variable
@@ -142,7 +144,7 @@ def ods_ks_leader_order():
         )
         return path
 
-    @task(retries=10, retry_delay=10)
+    @task()
     def read_sync_data(path):
         from qcloud_cos import CosConfig, CosS3Client
         from airflow.models import Variable

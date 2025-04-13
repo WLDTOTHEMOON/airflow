@@ -12,7 +12,9 @@ SCHEMA = 'ods'
 TABLE = 'ods_ks_cps_order'
 default_args = {
     'owner': 'Fang Yongchao',
-    'on_failure_callback': task_failure_callback
+    'on_failure_callback': task_failure_callback,
+    'retries': 10,
+    'retry_delay': 30
 }
 
 
@@ -53,7 +55,7 @@ def ods_ks_cps_order():
         '''
         return sql
 
-    @task
+    @task()
     def get_period(**kwargs):
         begin_time = kwargs['data_interval_start']
         end_time = kwargs['data_interval_end']
@@ -67,8 +69,7 @@ def ods_ks_cps_order():
             'end_time': end_time.in_tz('Asia/Shanghai')
         }
 
-
-    @task(retries=10, retry_delay=10)
+    @task()
     def get_open_id():
         from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
         sql = f'''
@@ -86,7 +87,7 @@ def ods_ks_cps_order():
         ).execute({})
         return [each[0] for each in open_ids]
 
-    @task(trigger_rule='all_done', retries=10, retry_delay=10)
+    @task(trigger_rule='all_done')
     def get_token(open_id):  
         from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
         sql = f'''
@@ -107,7 +108,7 @@ def ods_ks_cps_order():
             'updated_at': tokens[0][2]
         }
     
-    @task(trigger_rule='all_done', retries=10, retry_delay=10)
+    @task(trigger_rule='all_done')
     def update_token(tokens):
         from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
         from airflow.models import Variable
@@ -142,7 +143,7 @@ def ods_ks_cps_order():
             ).execute({})
             return new_tokens
     
-    @task(trigger_rule='all_done', retries=10, retry_delay=10)
+    @task(trigger_rule='all_done')
     def fetch_write_data(tokens, period):
         from qcloud_cos import CosConfig, CosS3Client
         from airflow.models import Variable
@@ -172,7 +173,7 @@ def ods_ks_cps_order():
             'path': path
         }
     
-    @task(trigger_rule='all_done', retries=10, retry_delay=10)
+    @task(trigger_rule='all_done')
     def read_sync_data(path):
         from qcloud_cos import CosConfig, CosS3Client
         from airflow.models import Variable
@@ -244,7 +245,7 @@ def ods_ks_cps_order():
             logger.info('数据为空，跳过同步')
             return 0
 
-    @task(trigger_rule='all_done', retries=10, retry_delay=10, outlets=[Dataset('mysql://ods.ods_ks_cps_order')])
+    @task(trigger_rule='all_done', outlets=[Dataset('mysql://ods.ods_ks_cps_order')])
     def summary(num, period):
         from airflow.models import Variable
         total = sum(num)

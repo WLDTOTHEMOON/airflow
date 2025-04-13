@@ -9,7 +9,9 @@ MYSQL_KEYWORDS = ['group']
 
 default_args = {
     'owner': 'Fang Yongchao',
-    'on_failure_callback': task_failure_callback
+    'on_failure_callback': task_failure_callback,
+    'retries': 5,
+    'retry_delay': 10
 }
 
 def generate_upsert_template(schema, table):
@@ -62,31 +64,50 @@ def write_to_cos(path, file_name):
     return path
 
 def read_and_sync(path, sql):
-        from qcloud_cos import CosConfig, CosS3Client
+    from qcloud_cos import CosConfig, CosS3Client
+    from airflow.models import Variable
+    from io import BytesIO
+    from include.database.mysql import engine
+    from sqlalchemy import text
+    import pandas as pd
+    cos_config = Variable.get('cos', deserialize_json=True)
+    client=CosS3Client(CosConfig(SecretId=cos_config['secret_id'], SecretKey=cos_config['secret_key'], Region=cos_config['region']))
+    response = client.get_object(Bucket=cos_config['bucket'], Key=path)
+    raw_data = response['Body'].get_raw_stream().read()
+    data = pd.read_csv(BytesIO(raw_data), na_filter=None)
+    data = data.rename(columns={each: f'{each}_s' for each in MYSQL_KEYWORDS})
+    data = data.replace('', None)
+    data = data.where(pd.notna(data), None).to_dict(orient='records')
+    
+    if len(data) > 0:
+        with engine.connect() as conn:
+            conn.execute(text(sql), data)
+    logger.info(f'完成数据同步 {len(data)} items')
+    return 1
+
+
+@dag(schedule_interval='0 */2 * * *', start_date=pendulum.datetime(2023, 1, 1), catchup=False,
+     default_args=default_args, tags=['ods', 'src', 'platform'], max_active_runs=1)
+def ods_pf_summary():
+    @task(outlets=[Dataset('mysql://ods.ods_pf_summary')])
+    def ods_pf_summary(**kwargs):
         from airflow.models import Variable
-        from io import BytesIO
-        from include.database.mysql import engine
-        from sqlalchemy import text
-        import pandas as pd
-        cos_config = Variable.get('cos', deserialize_json=True)
-        client=CosS3Client(CosConfig(SecretId=cos_config['secret_id'], SecretKey=cos_config['secret_key'], Region=cos_config['region']))
-        response = client.get_object(Bucket=cos_config['bucket'], Key=path)
-        raw_data = response['Body'].get_raw_stream().read()
-        data = pd.read_csv(BytesIO(raw_data), na_filter=None)
-        data = data.rename(columns={each: f'{each}_s' for each in MYSQL_KEYWORDS})
-        data = data.replace('', None)
-        data = data.where(pd.notna(data), None).to_dict(orient='records')
-        
-        if len(data) > 0:
-            with engine.connect() as conn:
-                conn.execute(text(sql), data)
-        logger.info(f'完成数据同步 {len(data)} items')
-        return 1
+        begin_time = kwargs['data_interval_start']
+        end_time = kwargs['data_interval_end']
+        begin_time_fmt = begin_time.in_tz('Asia/Shanghai').format('YYYY-MM-DD HH:mm:ss')
+        end_time_fmt = end_time.in_tz('Asia/Shanghai').format('YYYY-MM-DD HH:mm:ss')
+
+        Variable.set('ods_platform_begin_time', begin_time_fmt)
+        Variable.set('ods_platform_end_time', end_time_fmt)
+        logger.info(f'platform 相关数据ods更新 From {begin_time_fmt} to {end_time_fmt}')
+    ods_pf_summary()
+ods_pf_summary()
+
 
 @dag(schedule=[Dataset('mysql://ods.ods_pf_summary')], start_date=pendulum.datetime(2023, 1, 1), catchup=False,
-     default_args=default_args, tags=['ods', 'sync', 'platform'], max_active_runs=1)
+     default_args=default_args, tags=['ods', 'platform'], max_active_runs=1)
 def ods_pf_links():
-    @task(retries=5, retry_delay=10, outlets=[Dataset('mysql://ods.ods_pf_links')])
+    @task(outlets=[Dataset('mysql://ods.ods_pf_links')])
     def ods_pf_links(**kwargs):
         from airflow.models import Variable
         begin_time = Variable.get('ods_platform_begin_time',)
@@ -100,9 +121,9 @@ def ods_pf_links():
 ods_pf_links()
 
 @dag(schedule=[Dataset('mysql://ods.ods_pf_summary')], start_date=pendulum.datetime(2023, 1, 1), catchup=False,
-     default_args=default_args, tags=['ods', 'sync', 'platform'], max_active_runs=1)
+     default_args=default_args, tags=['ods', 'platform'], max_active_runs=1)
 def ods_pf_suppliers():
-    @task(retries=5, retry_delay=10, outlets=[Dataset('mysql://ods.ods_pf_suppliers')])
+    @task(outlets=[Dataset('mysql://ods.ods_pf_suppliers')])
     def ods_pf_suppliers(**kwargs):
         from airflow.models import Variable
         begin_time = Variable.get('ods_platform_begin_time',)
@@ -116,9 +137,9 @@ def ods_pf_suppliers():
 ods_pf_suppliers()
 
 @dag(schedule=[Dataset('mysql://ods.ods_pf_summary')], start_date=pendulum.datetime(2023, 1, 1), catchup=False,
-     default_args=default_args, tags=['ods', 'sync', 'platform'], max_active_runs=1)
+     default_args=default_args, tags=['ods', 'platform'], max_active_runs=1)
 def ods_pf_products():
-    @task(retries=5, retry_delay=10, outlets=[Dataset('mysql://ods.ods_pf_products')])
+    @task(outlets=[Dataset('mysql://ods.ods_pf_products')])
     def ods_pf_products(**kwargs):
         from airflow.models import Variable
         begin_time = Variable.get('ods_platform_begin_time',)
@@ -132,9 +153,9 @@ def ods_pf_products():
 ods_pf_products()
 
 @dag(schedule=[Dataset('mysql://ods.ods_pf_summary')], start_date=pendulum.datetime(2023, 1, 1), catchup=False,
-     default_args=default_args, tags=['ods', 'sync', 'platform'], max_active_runs=1)
+     default_args=default_args, tags=['ods', 'platform'], max_active_runs=1)
 def ods_pf_reviews():
-    @task(retries=5, retry_delay=10, outlets=[Dataset('mysql://ods.ods_pf_reviews')])
+    @task(outlets=[Dataset('mysql://ods.ods_pf_reviews')])
     def ods_pf_reviews(**kwargs):
         from airflow.models import Variable
         begin_time = Variable.get('ods_platform_begin_time',)
@@ -148,9 +169,9 @@ def ods_pf_reviews():
 ods_pf_reviews()
 
 @dag(schedule=[Dataset('mysql://ods.ods_pf_summary')], start_date=pendulum.datetime(2023, 1, 1), catchup=False,
-     default_args=default_args, tags=['ods', 'sync', 'platform'], max_active_runs=1)
+     default_args=default_args, tags=['ods', 'platform'], max_active_runs=1)
 def ods_pf_anchor_select_products():
-    @task(retries=5, retry_delay=10, outlets=[Dataset('mysql://ods.ods_pf_anchor_select_products')])
+    @task(outlets=[Dataset('mysql://ods.ods_pf_anchor_select_products')])
     def ods_pf_anchor_select_products(**kwargs):
         from airflow.models import Variable
         begin_time = Variable.get('ods_platform_begin_time',)
@@ -164,9 +185,9 @@ def ods_pf_anchor_select_products():
 ods_pf_anchor_select_products()
 
 @dag(schedule=[Dataset('mysql://ods.ods_pf_summary')], start_date=pendulum.datetime(2023, 1, 1), catchup=False,
-     default_args=default_args, tags=['ods', 'sync', 'platform'], max_active_runs=1)
+     default_args=default_args, tags=['ods', 'platform'], max_active_runs=1)
 def ods_pf_anchor_info():
-    @task(retries=5, retry_delay=10, outlets=[Dataset('mysql://ods.ods_pf_anchor_info')])
+    @task(outlets=[Dataset('mysql://ods.ods_pf_anchor_info')])
     def ods_pf_anchor_info(**kwargs):
         from airflow.models import Variable
         begin_time = Variable.get('ods_platform_begin_time',)
@@ -180,9 +201,9 @@ def ods_pf_anchor_info():
 ods_pf_anchor_info()
 
 @dag(schedule=[Dataset('mysql://ods.ods_pf_summary')], start_date=pendulum.datetime(2023, 1, 1), catchup=False,
-     default_args=default_args, tags=['ods', 'sync', 'platform'], max_active_runs=1)
+     default_args=default_args, tags=['ods', 'platform'], max_active_runs=1)
 def ods_pf_account_info():
-    @task(retries=5, retry_delay=10, outlets=[Dataset('mysql://ods.ods_pf_account_info')])
+    @task(outlets=[Dataset('mysql://ods.ods_pf_account_info')])
     def ods_pf_account_info(**kwargs):
         from airflow.models import Variable
         begin_time = Variable.get('ods_platform_begin_time',)
@@ -196,9 +217,9 @@ def ods_pf_account_info():
 ods_pf_account_info()
 
 @dag(schedule=[Dataset('mysql://ods.ods_pf_summary')], start_date=pendulum.datetime(2023, 1, 1), catchup=False,
-     default_args=default_args, tags=['ods', 'sync', 'platform'], max_active_runs=1)
+     default_args=default_args, tags=['ods', 'platform'], max_active_runs=1)
 def ods_pf_users():
-    @task(retries=5, retry_delay=10, outlets=[Dataset('mysql://ods.ods_pf_users')])
+    @task(outlets=[Dataset('mysql://ods.ods_pf_users')])
     def ods_pf_users(**kwargs):
         from airflow.models import Variable
         begin_time = Variable.get('ods_platform_begin_time',)
@@ -212,9 +233,9 @@ def ods_pf_users():
 ods_pf_users()
 
 @dag(schedule=[Dataset('mysql://ods.ods_pf_summary')], start_date=pendulum.datetime(2023, 1, 1), catchup=False,
-     default_args=default_args, tags=['ods', 'sync', 'platform'], max_active_runs=1)
+     default_args=default_args, tags=['ods', 'platform'], max_active_runs=1)
 def ods_pf_handover():
-    @task(retries=5, retry_delay=10, outlets=[Dataset('mysql://ods.ods_pf_handover')])
+    @task(outlets=[Dataset('mysql://ods.ods_pf_handover')])
     def ods_pf_handover(**kwargs):
         from airflow.models import Variable
         begin_time = Variable.get('ods_platform_begin_time',)
@@ -228,9 +249,9 @@ def ods_pf_handover():
 ods_pf_handover()
 
 @dag(schedule=[Dataset('mysql://ods.ods_pf_summary')], start_date=pendulum.datetime(2023, 1, 1), catchup=False,
-     default_args=default_args, tags=['ods', 'sync', 'platform'], max_active_runs=1)
+     default_args=default_args, tags=['ods', 'platform'], max_active_runs=1)
 def ods_pf_tree():
-    @task(retries=5, retry_delay=10, outlets=[Dataset('mysql://ods.ods_pf_tree')])
+    @task(outlets=[Dataset('mysql://ods.ods_pf_tree')])
     def ods_pf_tree(**kwargs):
         from airflow.models import Variable
         begin_time = Variable.get('ods_platform_begin_time',)
@@ -244,9 +265,9 @@ def ods_pf_tree():
 ods_pf_tree()
 
 @dag(schedule=[Dataset('mysql://ods.ods_pf_summary')], start_date=pendulum.datetime(2023, 1, 1), catchup=False,
-     default_args=default_args, tags=['ods', 'sync', 'platform'], max_active_runs=1)
+     default_args=default_args, tags=['ods', 'platform'], max_active_runs=1)
 def ods_pf_supplier_class():
-    @task(retries=5, retry_delay=10, outlets=[Dataset('mysql://ods.ods_pf_suppliers_class')])
+    @task(outlets=[Dataset('mysql://ods.ods_pf_suppliers_class')])
     def ods_pf_supplier_class(**kwargs):
         from airflow.models import Variable
         begin_time = Variable.get('ods_platform_begin_time',)
@@ -258,20 +279,3 @@ def ods_pf_supplier_class():
         read_and_sync(path=path, sql=sql)
     ods_pf_supplier_class()
 ods_pf_supplier_class()
-
-@dag(schedule_interval='0 */2 * * *', start_date=pendulum.datetime(2023, 1, 1), catchup=False,
-     default_args=default_args, tags=['ods', 'sync', 'platform'], max_active_runs=1)
-def ods_pf_summary():
-    @task(retries=5, retry_delay=10, outlets=[Dataset('mysql://ods.ods_pf_summary')])
-    def ods_pf_summary(**kwargs):
-        from airflow.models import Variable
-        begin_time = kwargs['data_interval_start']
-        end_time = kwargs['data_interval_end']
-        begin_time_fmt = begin_time.in_tz('Asia/Shanghai').format('YYYY-MM-DD HH:mm:ss')
-        end_time_fmt = end_time.in_tz('Asia/Shanghai').format('YYYY-MM-DD HH:mm:ss')
-
-        Variable.set('ods_platform_begin_time', begin_time_fmt)
-        Variable.set('ods_platform_end_time', end_time_fmt)
-        logger.info(f'platform 相关数据ods更新 From {begin_time_fmt} to {end_time_fmt}')
-    ods_pf_summary()
-ods_pf_summary()
