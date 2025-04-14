@@ -215,7 +215,7 @@ class FeishuSheet(FeishuClient):
                     tmp_dat = [[each if not pd.isna(each) else ''] for each in dat[col_name].iloc[tmp_row_min:tmp_row_max].to_list()]
                 self.write_cells(
                     spreadsheet_token=spreadsheet_token, sheet_id=sheet_id,
-                    ranges=f'{sheet_id}!{tmp_col}{tmp_start_row}:{tmp_col}{tmp_end_row}', values=tmp_dat
+                    ranges=f'{tmp_col}{tmp_start_row}:{tmp_col}{tmp_end_row}', values=tmp_dat
                 )
     
     def write_df_replace(self, dat, spreadsheet_token, sheet_id, to_char=False):
