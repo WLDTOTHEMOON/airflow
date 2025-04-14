@@ -1,7 +1,10 @@
 from include.feishu.feishu_client import FeishuClient
+from include.feishu.utils import *
 from lark_oapi.api.sheets.v3 import *
 import lark_oapi as lark
+import pandas as pd
 import string
+import math
 
 
 class FeishuSheet(FeishuClient):
@@ -186,6 +189,60 @@ class FeishuSheet(FeishuClient):
             return response
         return lark.JSON.unmarshal(response.raw.content, dict)['data']
     
+    def write_df_to_cell(self, spreadsheet_token, sheet_id, dat, start_row, start_col, with_headers, to_char):
+        col_num_start = col_convert(start_col)
+        col_num_end = col_convert(start_col + dat.shape[1] - 1)
+        row_num = dat.shape[0]
+        col_names = list(dat.columns)
+        if with_headers:
+            print('add headers...')
+            self.write_cells(
+                spreadsheet_token=spreadsheet_token, sheet_id=sheet_id,
+                ranges=f'{col_num_start}{start_row}:{col_num_end}{start_row}', values=[col_names]
+            )
+            start_row = start_row + 1
+
+        for i, col_name in enumerate(col_names):
+            for j in range(math.ceil(row_num / 4000)):
+                tmp_row_min = 4000 * j
+                tmp_row_max = 4000 * (j + 1)
+                tmp_start_row = start_row + 4000 * j
+                tmp_end_row = start_row + 4000 * (j + 1) - 1
+                tmp_col = col_convert(start_col + i)
+                if to_char:
+                    tmp_dat = [[str(each) if not pd.isna(each) else ''] for each in dat[col_name].iloc[tmp_row_min:tmp_row_max].to_list()]
+                else:
+                    tmp_dat = [[each if not pd.isna(each) else ''] for each in dat[col_name].iloc[tmp_row_min:tmp_row_max].to_list()]
+                self.write_cells(
+                    spreadsheet_token=spreadsheet_token, sheet_id=sheet_id,
+                    ranges=f'{sheet_id}!{tmp_col}{tmp_start_row}:{tmp_col}{tmp_end_row}', values=tmp_dat
+                )
+    
+    def write_df_replace(self, dat, spreadsheet_token, sheet_id, to_char=False):
+        first_col = self.read_cells(spreadsheet_token=spreadsheet_token, sheet_id=sheet_id, ranges='A1:A99999')
+        row_num = next(i for i, x in enumerate(first_col['valueRanges'][0]['values']) if x == [None])
+
+        if row_num > 0:
+            self.add_row_col(spreadsheet_token=spreadsheet_token, sheet_id=sheet_id, major_dim='ROWS', length=1)
+            self.delete_row_col(spreadsheet_token=spreadsheet_token, sheet_id=sheet_id, major_dim='ROWS', start_index=1, end_index=row_num)
+
+        self.write_df_to_cell(spreadsheet_token=spreadsheet_token, sheet_id=sheet_id, dat=dat, start_row=1, start_col=1, with_headers=True, to_char=to_char)
+
+        style_dict = {
+            'A1:' + col_convert(dat.shape[1]) + '1': {
+                'font': {
+                    'bold': True
+                }
+            }
+        }
+        for key, value in style_dict.items():
+            self.style_cells(spreadsheet_token=spreadsheet_token, sheet_id=sheet_id, ranges=key, styles=value)
+
+    def write_df_append(self, dat, spreadsheet_token, sheet_id, to_char=True):
+        first_col = self.read_cells(spreadsheet_token=spreadsheet_token, sheet_id=sheet_id, ranges='A1:A99999')
+        row_num = next(i for i, x in enumerate(first_col['valueRanges'][0]['values']) if x == [None])
+        self.write_df_to_cell(spreadsheet_token=spreadsheet_token, sheet_id=sheet_id, start_row=row_num + 1, start_col=1, with_headers=False, to_char=to_char)
+
     def fetch_dat(self, spreadsheet_token, sheet_id):
         first_row = self.read_cells(spreadsheet_token=spreadsheet_token, sheet_id=sheet_id, ranges='A1:AZ1')
         col_num = next(i for i, x in enumerate(first_row['valueRanges'][0]['values'][0]) if x is None)
