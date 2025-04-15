@@ -3,3 +3,4 @@ logs/*
 postgres_data/*
 .env
 config.json
+.cursorrules
