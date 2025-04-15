@@ -105,7 +105,7 @@ def get_child_folder(path):
 @dag(schedule_interval='0 */2 * * *', start_date=pendulum.datetime(2023, 1, 1), catchup=False,
      default_args=default_args, tags=['ods', 'src', 'crawler'], max_active_runs=1)
 def ods_crawler_leader_commission_income():
-    @task(outlets=[Dataset('mysql://ods.ods_crawler_leader_commission_income')])
+    @task(outlets=[Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/ods/ods_crawler_leader_commission_income')])
     def ods_crawler_leader_commission_income():
         from include.database.mysql import engine
         from sqlalchemy import text
@@ -164,7 +164,7 @@ ods_crawler_leader_commission_income()
 @dag(schedule_interval='0 */2 * * *', start_date=pendulum.datetime(2023, 1, 1), catchup=False,
      default_args=default_args, tags=['ods', 'src', 'crawler'], max_active_runs=1)
 def ods_crawler_recreation():
-    @task(outlets=[Dataset('mysql://ods.ods_crawler_recreation')])
+    @task(outlets=[Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/ods/ods_crawler_recreation')])
     def ods_crawler_recreation():
         from include.database.mysql import engine
         from sqlalchemy import text
@@ -226,7 +226,7 @@ ods_crawler_recreation()
 @dag(schedule_interval='0 */2 * * *', start_date=pendulum.datetime(2023, 1, 1), catchup=False,
      default_args=default_args, tags=['ods', 'src', 'crawler'], max_active_runs=1)
 def ods_crawler_mcn_order():
-    @task(outlets=[Dataset('mysql://ods.ods_crawler_mcn_order')])
+    @task(outlets=[Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/ods/ods_crawler_mcn_order')])
     def ods_crawler_mcn_order():
         from include.database.mysql import engine
         from sqlalchemy import text

@@ -13,8 +13,8 @@ default_args = {
 }
 
 
-@dag(schedule=[Dataset('mysql://dwd.dwd_ks_cps_order'), Dataset('mysql://dwd.dwd_ks_leader_commission_income'), Dataset('mysql://dwd.dwd_ks_recreation'),
-               Dataset('mysql://dim.dim_ks_account_info'), Dataset('mysql://dwd.dwd_ks_item_belong'), Dataset('mysql://ods.ods_special_allocation')], 
+@dag(schedule=[Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/dwd/dwd_ks_cps_order'), Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/dwd/dwd_ks_leader_commission_income'), Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/dwd/dwd_ks_recreation'),
+               Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/dim/dim_ks_account_info'), Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/dwd/dwd_ks_item_belong'), Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/ods/ods_special_allocation')], 
      start_date=pendulum.datetime(2023, 1, 1), catchup=False,
      default_args=default_args, tags=['dws', 'etl'], max_active_runs=1)
 def dws_ks_big_tbl():
@@ -28,7 +28,7 @@ def dws_ks_big_tbl():
         conn_id='mysql',
         sql='sql/dws_ks_big_tbl.sql',
         parameters={'order_create_time': order_create_time},
-        outlets=[Dataset('mysql://dws.dws_ks_big_tbl')]
+        outlets=[Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/dws/dws_ks_big_tbl')]
     )
     
     dws_ks_big_tbl

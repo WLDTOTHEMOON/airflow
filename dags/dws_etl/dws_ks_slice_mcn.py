@@ -13,8 +13,8 @@ default_args = {
 }
 
 
-@dag(schedule=[Dataset('mysql://dim.dim_ks_account_info'), Dataset('mysql://dwd.dwd_ks_cps_order'), Dataset('mysql://ods.ods_fs_slice_account'),
-               Dataset('mysql://dwd.dwd_ks_mcn_order')], 
+@dag(schedule=[Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/dim/dim_ks_account_info'), Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/dwd/dwd_ks_cps_order'), Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/ods/ods_fs_slice_account'),
+               Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/dwd/dwd_ks_mcn_order')], 
      start_date=pendulum.datetime(2023, 1, 1), catchup=False,
      default_args=default_args, tags=['dws', 'etl'], max_active_runs=1)
 def dws_ks_slice_mcn():

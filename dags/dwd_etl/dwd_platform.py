@@ -16,7 +16,7 @@ default_args = {
 }
 
 
-@dag(schedule=[Dataset('mysql://ods.ods_pf_links'), Dataset('mysql://ods.ods_pf_anchor_select_products')],
+@dag(schedule=[Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/ods/ods_pf_links'), Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/ods/ods_pf_anchor_select_products')],
      start_date=pendulum.datetime(2023, 1, 1), catchup=False,
      default_args=default_args, tags=['dwd', 'etl'], max_active_runs=1)
 def dwd_pf_links():
@@ -25,13 +25,13 @@ def dwd_pf_links():
         conn_id='mysql',
         sql='sql/dwd_pf_links.sql',
         parameters={'begin_time': Variable.get('ods_platform_begin_time'), 'end_time': Variable.get('ods_platform_end_time')},
-        outlets=[Dataset('mysql://dwd.dwd_pf_links')]
+        outlets=[Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/dwd/dwd_pf_links')]
     )
     dwd_pf_links
 dwd_pf_links()
 
 
-@dag(schedule=[Dataset('mysql://ods.ods_pf_users')],
+@dag(schedule=[Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/ods/ods_pf_users')],
      start_date=pendulum.datetime(2023, 1, 1), catchup=False,
      default_args=default_args, tags=['dwd', 'etl'], max_active_runs=1)
 def dwd_pf_users():
@@ -40,13 +40,13 @@ def dwd_pf_users():
         conn_id='mysql',
         sql='sql/dwd_pf_users.sql',
         parameters={'begin_time': Variable.get('ods_platform_begin_time'), 'end_time': Variable.get('ods_platform_end_time')},
-        outlets=[Dataset('mysql://dwd.dwd_pf_users')]
+        outlets=[Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/dwd/dwd_pf_users')]
     )
     dwd_pf_users
 dwd_pf_users()
 
 
-@dag(schedule=[Dataset('mysql://ods.ods_pf_suppliers'), Dataset('mysql://ods.ods_pf_users')], 
+@dag(schedule=[Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/ods/ods_pf_suppliers'), Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/ods/ods_pf_users')], 
      start_date=pendulum.datetime(2023, 1, 1), catchup=False,
      default_args=default_args, tags=['dwd', 'etl'], max_active_runs=1)
 def dwd_pf_suppliers():
@@ -55,13 +55,13 @@ def dwd_pf_suppliers():
         conn_id='mysql',
         sql='sql/dwd_pf_suppliers.sql',
         parameters={'begin_time': Variable.get('ods_platform_begin_time'), 'end_time': Variable.get('ods_platform_end_time')},
-        outlets=[Dataset('mysql://dwd.dwd_pf_suppliers')]
+        outlets=[Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/dwd/dwd_pf_suppliers')]
     )
     dwd_pf_suppliers
 dwd_pf_suppliers()
 
 
-@dag(schedule=[Dataset('mysql://ods.ods_pf_reviews'), Dataset('mysql://ods.ods_pf_users')],
+@dag(schedule=[Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/ods/ods_pf_reviews'), Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/ods/ods_pf_users')],
      start_date=pendulum.datetime(2023, 1, 1), catchup=False,
      default_args=default_args, tags=['dwd', 'etl'], max_active_runs=1)
 def dwd_pf_reviews():
@@ -70,13 +70,13 @@ def dwd_pf_reviews():
         conn_id='mysql',
         sql='sql/dwd_pf_reviews.sql',
         parameters={'begin_time': Variable.get('ods_platform_begin_time'), 'end_time': Variable.get('ods_platform_end_time')},
-        outlets=[Dataset('mysql://dwd.dwd_pf_reviews')]
+        outlets=[Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/dwd/dwd_pf_reviews')]
     )
     dwd_pf_reviews
 dwd_pf_reviews()
 
 
-@dag(schedule=[Dataset('mysql://ods.ods_pf_products')],
+@dag(schedule=[Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/ods/ods_pf_products')],
      start_date=pendulum.datetime(2023, 1, 1), catchup=False,
      default_args=default_args, tags=['dwd', 'etl'], max_active_runs=1)
 def dwd_pf_products_anchor():
@@ -85,13 +85,13 @@ def dwd_pf_products_anchor():
         conn_id='mysql',
         sql='sql/dwd_pf_products_anchor.sql',
         parameters={'begin_time': Variable.get('ods_platform_begin_time'), 'end_time': Variable.get('ods_platform_end_time')},
-        outlets=[Dataset('mysql://dwd.dwd_pf_products_anchor')]
+        outlets=[Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/dwd/dwd_pf_products_anchor')]
     )
     dwd_pf_products_anchor
 dwd_pf_products_anchor()
 
 
-@dag(schedule=[Dataset('mysql://ods.ods_pf_products')],
+@dag(schedule=[Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/ods/ods_pf_products')],
      start_date=pendulum.datetime(2023, 1, 1), catchup=False,
      default_args=default_args, tags=['dwd', 'etl'], max_active_runs=1)
 def dwd_pf_products_bd():
@@ -100,14 +100,14 @@ def dwd_pf_products_bd():
         conn_id='mysql',
         sql='sql/dwd_pf_products_bd.sql',
         parameters={'begin_time': Variable.get('ods_platform_begin_time'), 'end_time': Variable.get('ods_platform_end_time')},
-        outlets=[Dataset('mysql://dwd.dwd_pf_products_bd')]
+        outlets=[Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/dwd/dwd_pf_products_bd')]
     )
     dwd_pf_products_bd
 dwd_pf_products_bd()
 
 
-@dag(schedule=[Dataset('mysql://dwd.dwd_pf_links'), Dataset('mysql://dwd.dwd_pf_products_bd'), Dataset('mysql://dwd.dwd_pf_products_anchor'),
-               Dataset('mysql://dwd.dwd_pf_suppliers_belong'), Dataset('mysql://dwd.dwd_ks_activity_item_list'), Dataset('mysql://ods.ods_fs_links')], 
+@dag(schedule=[Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/dwd/dwd_pf_links'), Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/dwd/dwd_pf_products_bd'), Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/dwd/dwd_pf_products_anchor'),
+               Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/dwd/dwd_pf_suppliers_belong'), Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/dwd/dwd_ks_activity_item_list'), Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/ods/ods_fs_links')], 
      start_date=pendulum.datetime(2023, 1, 1), catchup=False,
      default_args=default_args, tags=['dwd', 'etl'], max_active_runs=1)
 def dwd_ks_item_belong():
@@ -115,14 +115,14 @@ def dwd_ks_item_belong():
         task_id='dwd_ks_item_belong',
         conn_id='mysql',
         sql='sql/dwd_ks_item_belong.sql',
-        outlets=[Dataset('mysql://dwd.dwd_ks_item_belong')]
+        outlets=[Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/dwd/dwd_ks_item_belong')]
     )
     dwd_ks_item_belong
 dwd_ks_item_belong()
 
 
-@dag(schedule=[Dataset('mysql://ods.ods_pf_suppliers'), Dataset('mysql://ods.ods_pf_handover'), Dataset('mysql://ods.ods_pf_users'),
-               Dataset('mysql://ods.ods_item_category')], 
+@dag(schedule=[Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/ods/ods_pf_suppliers'), Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/ods/ods_pf_handover'), Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/ods/ods_pf_users'),
+               Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/ods/ods_item_category')], 
      start_date=pendulum.datetime(2023, 1, 1), catchup=False,
      default_args=default_args, tags=['dwd', 'etl'], max_active_runs=1)
 def dwd_pf_suppliers_belong():
@@ -130,7 +130,7 @@ def dwd_pf_suppliers_belong():
         task_id='dwd_pf_suppliers_belong',
         conn_id='mysql',
         sql='sql/dwd_pf_suppliers_belong.sql',
-        outlets=[Dataset('mysql://dwd.dwd_pf_suppliers_belong')]
+        outlets=[Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/dwd/dwd_pf_suppliers_belong')]
     )
     dwd_pf_suppliers_belong
 dwd_pf_suppliers_belong()

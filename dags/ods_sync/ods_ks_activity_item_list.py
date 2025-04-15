@@ -17,7 +17,7 @@ default_args = {
     'retry_delay': 10
 }
 
-@dag(schedule_interval=[Dataset('mysql://ods.ods_ks_activity_info')],
+@dag(schedule_interval=[Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/ods/ods_ks_activity_info')],
      start_date=pendulum.datetime(2023, 1, 1), catchup=False,
      default_args=default_args, tags=['ods', 'kuaishou'], max_active_tasks=3, max_active_runs=1)
 def ods_ks_activity_item_list():
@@ -218,7 +218,7 @@ def ods_ks_activity_item_list():
             logger.info('数据为空，跳过同步')
             return 0
 
-    @task(trigger_rule='all_done', outlets=[Dataset('mysql://ods.ods_ks_activity_item_list')])
+    @task(trigger_rule='all_done', outlets=[Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/ods/ods_ks_activity_item_list')])
     def summary(num):
         if num:
             total = sum(num)

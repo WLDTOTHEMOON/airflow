@@ -14,7 +14,7 @@ default_args = {
 }
 
 
-@dag(schedule=[Dataset('mysql://ods.ods_pf_account_info'), Dataset('mysql://ods.ods_pf_anchor_info'), Dataset('mysql://ods.ods_pf_users')], 
+@dag(schedule=[Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/ods/ods_pf_account_info'), Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/ods/ods_pf_anchor_info'), Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/ods/ods_pf_users')], 
      start_date=pendulum.datetime(2023, 1, 1), catchup=False,
      default_args=default_args, tags=['dim', 'etl'], max_active_runs=1)
 def dim_ks_account_info():
@@ -23,7 +23,7 @@ def dim_ks_account_info():
         task_id='dim_ks_account_info',
         conn_id='mysql',
         sql='sql/dim_ks_account_info.sql',
-        outlets=[Dataset('mysql://dim.dim_ks_account_info')]
+        outlets=[Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/dim/dim_ks_account_info')]
     )
     
     dim_ks_account_info

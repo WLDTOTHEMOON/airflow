@@ -14,7 +14,7 @@ default_args = {
 }
 
 
-@dag(schedule=[Dataset('mysql://ods.ods_ks_activity_item_list')],
+@dag(schedule=[Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/ods/ods_ks_activity_item_list')],
      start_date=pendulum.datetime(2023, 1, 1), catchup=False,
      default_args=default_args, tags=['dwd', 'etl'], max_active_runs=1)
 def dwd_ks_activity_item_list():
@@ -23,7 +23,7 @@ def dwd_ks_activity_item_list():
         task_id='dwd_ks_activity_item_list',
         conn_id='mysql',
         sql='sql/dwd_ks_activity_item_list.sql',
-        outlets=[Dataset('mysql://dwd.dwd_ks_activity_item_list')]
+        outlets=[Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/dwd/dwd_ks_activity_item_list')]
     )
     
     dwd_ks_activity_item_list

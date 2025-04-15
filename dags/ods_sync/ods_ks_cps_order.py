@@ -245,7 +245,7 @@ def ods_ks_cps_order():
             logger.info('数据为空，跳过同步')
             return 0
 
-    @task(trigger_rule='all_done', outlets=[Dataset('mysql://ods.ods_ks_cps_order')])
+    @task(trigger_rule='all_done', outlets=[Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/ods/ods_ks_cps_order')])
     def summary(num, period):
         from airflow.models import Variable
         total = sum(num)

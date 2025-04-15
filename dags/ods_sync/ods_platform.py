@@ -89,7 +89,7 @@ def read_and_sync(path, sql):
 @dag(schedule_interval='0 */2 * * *', start_date=pendulum.datetime(2023, 1, 1), catchup=False,
      default_args=default_args, tags=['ods', 'src', 'platform'], max_active_runs=1)
 def ods_pf_summary():
-    @task(outlets=[Dataset('mysql://ods.ods_pf_summary')])
+    @task(outlets=[Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/ods/ods_pf_summary')])
     def ods_pf_summary(**kwargs):
         from airflow.models import Variable
         begin_time = kwargs['data_interval_start']
@@ -104,10 +104,10 @@ def ods_pf_summary():
 ods_pf_summary()
 
 
-@dag(schedule=[Dataset('mysql://ods.ods_pf_summary')], start_date=pendulum.datetime(2023, 1, 1), catchup=False,
+@dag(schedule=[Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/ods/ods_pf_summary')], start_date=pendulum.datetime(2023, 1, 1), catchup=False,
      default_args=default_args, tags=['ods', 'platform'], max_active_runs=1)
 def ods_pf_links():
-    @task(outlets=[Dataset('mysql://ods.ods_pf_links')])
+    @task(outlets=[Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/ods/ods_pf_links')])
     def ods_pf_links(**kwargs):
         from airflow.models import Variable
         begin_time = Variable.get('ods_platform_begin_time',)
@@ -120,10 +120,10 @@ def ods_pf_links():
     ods_pf_links()
 ods_pf_links()
 
-@dag(schedule=[Dataset('mysql://ods.ods_pf_summary')], start_date=pendulum.datetime(2023, 1, 1), catchup=False,
+@dag(schedule=[Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/ods/ods_pf_summary')], start_date=pendulum.datetime(2023, 1, 1), catchup=False,
      default_args=default_args, tags=['ods', 'platform'], max_active_runs=1)
 def ods_pf_suppliers():
-    @task(outlets=[Dataset('mysql://ods.ods_pf_suppliers')])
+    @task(outlets=[Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/ods/ods_pf_suppliers')])
     def ods_pf_suppliers(**kwargs):
         from airflow.models import Variable
         begin_time = Variable.get('ods_platform_begin_time',)
@@ -136,10 +136,10 @@ def ods_pf_suppliers():
     ods_pf_suppliers()
 ods_pf_suppliers()
 
-@dag(schedule=[Dataset('mysql://ods.ods_pf_summary')], start_date=pendulum.datetime(2023, 1, 1), catchup=False,
+@dag(schedule=[Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/ods/ods_pf_summary')], start_date=pendulum.datetime(2023, 1, 1), catchup=False,
      default_args=default_args, tags=['ods', 'platform'], max_active_runs=1)
 def ods_pf_products():
-    @task(outlets=[Dataset('mysql://ods.ods_pf_products')])
+    @task(outlets=[Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/ods/ods_pf_products')])
     def ods_pf_products(**kwargs):
         from airflow.models import Variable
         begin_time = Variable.get('ods_platform_begin_time',)
@@ -152,10 +152,10 @@ def ods_pf_products():
     ods_pf_products()
 ods_pf_products()
 
-@dag(schedule=[Dataset('mysql://ods.ods_pf_summary')], start_date=pendulum.datetime(2023, 1, 1), catchup=False,
+@dag(schedule=[Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/ods/ods_pf_summary')], start_date=pendulum.datetime(2023, 1, 1), catchup=False,
      default_args=default_args, tags=['ods', 'platform'], max_active_runs=1)
 def ods_pf_reviews():
-    @task(outlets=[Dataset('mysql://ods.ods_pf_reviews')])
+    @task(outlets=[Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/ods/ods_pf_reviews')])
     def ods_pf_reviews(**kwargs):
         from airflow.models import Variable
         begin_time = Variable.get('ods_platform_begin_time',)
@@ -168,10 +168,10 @@ def ods_pf_reviews():
     ods_pf_reviews()
 ods_pf_reviews()
 
-@dag(schedule=[Dataset('mysql://ods.ods_pf_summary')], start_date=pendulum.datetime(2023, 1, 1), catchup=False,
+@dag(schedule=[Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/ods/ods_pf_summary')], start_date=pendulum.datetime(2023, 1, 1), catchup=False,
      default_args=default_args, tags=['ods', 'platform'], max_active_runs=1)
 def ods_pf_anchor_select_products():
-    @task(outlets=[Dataset('mysql://ods.ods_pf_anchor_select_products')])
+    @task(outlets=[Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/ods/ods_pf_anchor_select_products')])
     def ods_pf_anchor_select_products(**kwargs):
         from airflow.models import Variable
         begin_time = Variable.get('ods_platform_begin_time',)
@@ -184,10 +184,10 @@ def ods_pf_anchor_select_products():
     ods_pf_anchor_select_products()
 ods_pf_anchor_select_products()
 
-@dag(schedule=[Dataset('mysql://ods.ods_pf_summary')], start_date=pendulum.datetime(2023, 1, 1), catchup=False,
+@dag(schedule=[Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/ods/ods_pf_summary')], start_date=pendulum.datetime(2023, 1, 1), catchup=False,
      default_args=default_args, tags=['ods', 'platform'], max_active_runs=1)
 def ods_pf_anchor_info():
-    @task(outlets=[Dataset('mysql://ods.ods_pf_anchor_info')])
+    @task(outlets=[Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/ods/ods_pf_anchor_info')])
     def ods_pf_anchor_info(**kwargs):
         from airflow.models import Variable
         begin_time = Variable.get('ods_platform_begin_time',)
@@ -200,10 +200,10 @@ def ods_pf_anchor_info():
     ods_pf_anchor_info()
 ods_pf_anchor_info()
 
-@dag(schedule=[Dataset('mysql://ods.ods_pf_summary')], start_date=pendulum.datetime(2023, 1, 1), catchup=False,
+@dag(schedule=[Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/ods/ods_pf_summary')], start_date=pendulum.datetime(2023, 1, 1), catchup=False,
      default_args=default_args, tags=['ods', 'platform'], max_active_runs=1)
 def ods_pf_account_info():
-    @task(outlets=[Dataset('mysql://ods.ods_pf_account_info')])
+    @task(outlets=[Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/ods/ods_pf_account_info')])
     def ods_pf_account_info(**kwargs):
         from airflow.models import Variable
         begin_time = Variable.get('ods_platform_begin_time',)
@@ -216,10 +216,10 @@ def ods_pf_account_info():
     ods_pf_account_info()
 ods_pf_account_info()
 
-@dag(schedule=[Dataset('mysql://ods.ods_pf_summary')], start_date=pendulum.datetime(2023, 1, 1), catchup=False,
+@dag(schedule=[Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/ods/ods_pf_summary')], start_date=pendulum.datetime(2023, 1, 1), catchup=False,
      default_args=default_args, tags=['ods', 'platform'], max_active_runs=1)
 def ods_pf_users():
-    @task(outlets=[Dataset('mysql://ods.ods_pf_users')])
+    @task(outlets=[Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/ods/ods_pf_users')])
     def ods_pf_users(**kwargs):
         from airflow.models import Variable
         begin_time = Variable.get('ods_platform_begin_time',)
@@ -232,10 +232,10 @@ def ods_pf_users():
     ods_pf_users()
 ods_pf_users()
 
-@dag(schedule=[Dataset('mysql://ods.ods_pf_summary')], start_date=pendulum.datetime(2023, 1, 1), catchup=False,
+@dag(schedule=[Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/ods/ods_pf_summary')], start_date=pendulum.datetime(2023, 1, 1), catchup=False,
      default_args=default_args, tags=['ods', 'platform'], max_active_runs=1)
 def ods_pf_handover():
-    @task(outlets=[Dataset('mysql://ods.ods_pf_handover')])
+    @task(outlets=[Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/ods/ods_pf_handover')])
     def ods_pf_handover(**kwargs):
         from airflow.models import Variable
         begin_time = Variable.get('ods_platform_begin_time',)
@@ -248,10 +248,10 @@ def ods_pf_handover():
     ods_pf_handover()
 ods_pf_handover()
 
-@dag(schedule=[Dataset('mysql://ods.ods_pf_summary')], start_date=pendulum.datetime(2023, 1, 1), catchup=False,
+@dag(schedule=[Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/ods/ods_pf_summary')], start_date=pendulum.datetime(2023, 1, 1), catchup=False,
      default_args=default_args, tags=['ods', 'platform'], max_active_runs=1)
 def ods_pf_tree():
-    @task(outlets=[Dataset('mysql://ods.ods_pf_tree')])
+    @task(outlets=[Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/ods/ods_pf_tree')])
     def ods_pf_tree(**kwargs):
         from airflow.models import Variable
         begin_time = Variable.get('ods_platform_begin_time',)
@@ -264,10 +264,10 @@ def ods_pf_tree():
     ods_pf_tree()
 ods_pf_tree()
 
-@dag(schedule=[Dataset('mysql://ods.ods_pf_summary')], start_date=pendulum.datetime(2023, 1, 1), catchup=False,
+@dag(schedule=[Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/ods/ods_pf_summary')], start_date=pendulum.datetime(2023, 1, 1), catchup=False,
      default_args=default_args, tags=['ods', 'platform'], max_active_runs=1)
 def ods_pf_supplier_class():
-    @task(outlets=[Dataset('mysql://ods.ods_pf_suppliers_class')])
+    @task(outlets=[Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/ods/ods_pf_suppliers_class')])
     def ods_pf_supplier_class(**kwargs):
         from airflow.models import Variable
         begin_time = Variable.get('ods_platform_begin_time',)

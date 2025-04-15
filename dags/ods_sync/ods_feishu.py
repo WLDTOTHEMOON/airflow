@@ -25,7 +25,7 @@ def excel_time_convert(timestamp):
 @dag(schedule_interval='0 */2 * * *', start_date=pendulum.datetime(2023, 1, 1), catchup=False,
      default_args=default_args, tags=['ods', 'feishu', 'src'])
 def ods_fs_gmv_target():
-    @task(outlets=[Dataset('mysql://ods.ods_fs_gmv_target')])
+    @task(outlets=[Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/ods/ods_fs_gmv_target')])
     def ods_fs_gmv_target(**kwargs):
         from include.feishu.feishu_sheet import FeishuSheet
         from airflow.models import Variable
@@ -49,7 +49,7 @@ ods_fs_gmv_target()
 @dag(schedule_interval='0 */2 * * *', start_date=pendulum.datetime(2023, 1, 1), catchup=False,
      default_args=default_args, tags=['ods', 'feishu', 'src'])
 def ods_fs_links():
-    @task(outlets=[Dataset('mysql://ods.ods_fs_links')])
+    @task(outlets=[Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/ods/ods_fs_links')])
     def ods_fs_links(**kwargs):
         from include.feishu.feishu_sheet import FeishuSheet
         from airflow.models import Variable
@@ -91,7 +91,7 @@ ods_fs_links()
 @dag(schedule_interval='0 */2 * * *', start_date=pendulum.datetime(2023, 1, 1), catchup=False,
      default_args=default_args, tags=['ods', 'feishu', 'src'])
 def ods_fs_slice_account():
-    @task(outlets=[Dataset('mysql://ods.ods_fs_slice_account')])
+    @task(outlets=[Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/ods/ods_fs_slice_account')])
     def ods_fs_slice_account(**kwargs):
         from include.feishu.feishu_sheet import FeishuSheet
         from airflow.models import Variable

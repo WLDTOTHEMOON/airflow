@@ -212,7 +212,7 @@ def ods_ks_leader_order():
             conn.execute(text(sql), processed_data)
         return len(processed_data)
     
-    @task(outlets=[Dataset('mysql://ods.ods_ks_leader_order')])
+    @task(outlets=[Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/ods/ods_ks_leader_order')])
     def summary(num):
         logger.info(f'完成数据同步 {num} items')
 

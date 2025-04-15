@@ -136,7 +136,7 @@ def ods_ks_activity_info():
         )
         return path
 
-    @task(outlets=[Dataset('mysql://ods.ods_ks_activity_info')])
+    @task(outlets=[Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/ods/ods_ks_activity_info')])
     def read_sync_data(path):
         from qcloud_cos import CosConfig, CosS3Client
         from airflow.models import Variable
