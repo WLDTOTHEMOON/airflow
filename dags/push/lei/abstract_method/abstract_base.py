@@ -1,0 +1,116 @@
+# abstract_base.py
+import logging
+from abc import ABC, abstractmethod
+from typing import Any, Dict
+
+from airflow.decorators import dag, task
+from airflow.models import Variable
+from include.database.mysql import engine
+from include.feishu.feishu_app_robot import FeishuAppRobot
+from include.feishu.feishu_robot import FeishuRobot
+from include.feishu.feishu_sheet import FeishuSheet
+
+logger = logging.getLogger(__name__)
+
+
+class AbstractDagTask(ABC):
+    def __init__(
+            self,
+            dag_id: str,
+            schedule: Any,
+            default_args: dict,
+            tags: list[str],
+            robot_url: str,
+            feishu_sheet: FeishuSheet = None,
+            feishu_robot: FeishuRobot = None,
+            feishu_app_robot: FeishuAppRobot = None,
+            db_engine=None
+    ):
+        self.dag_id = dag_id
+        self.schedule = schedule
+        self.default_args = default_args
+        self.tags = tags
+        self.feishu_sheet = feishu_sheet or FeishuSheet(**Variable.get('feishu', deserialize_json=True))
+        self.feishu_robot = feishu_robot or FeishuRobot(robot_url)
+        self.feishu_app_robot = feishu_app_robot or FeishuAppRobot(**Variable.get('feishu', deserialize_json=True))
+        self.engine = db_engine or engine
+
+    @abstractmethod
+    def fetch_data(self) -> Any:
+        """Fetch raw data from source"""
+        raise NotImplementedError
+
+    @abstractmethod
+    def process_data(self, data: Any) -> Any:
+        """Process raw data into structured format"""
+        raise NotImplementedError
+
+    @abstractmethod
+    def render_feishu_format(
+            self,
+            processed_data: Any,
+            spreadsheet_token: str,
+            sheet_id: str
+    ):
+        """Render data to Feishu sheet format"""
+        raise NotImplementedError
+
+    @abstractmethod
+    def create_feishu_file(self) -> Dict:
+        """Create Feishu file and return access info"""
+        raise NotImplementedError
+
+    @abstractmethod
+    def send_card(self, file_key: str):
+        """Send notification card with file link"""
+        raise NotImplementedError
+
+    def create_dag(self):
+        @dag(
+            dag_id=self.dag_id,
+            schedule=self.schedule,
+            default_args=self.default_args,
+            tags=self.tags,
+            catchup=False
+        )
+        def generated_dag():
+            @task(task_id='fetch_data_task', retries=2)
+            def fetch_data_task():
+                try:
+                    return self.fetch_data()
+                except Exception as e:
+                    # Log and handle error
+                    raise
+
+            @task(task_id='process_data_task')
+            def process_data_task(data):
+                return self.process_data(data)
+
+            @task(task_id='create_feishu_file_task', multiple_outputs=True)
+            def create_feishu_file_task():
+                return self.create_feishu_file()
+
+            @task(task_id='render_feishu_format_task')
+            def render_feishu_format_task(processed_data, spreadsheet_token, sheet_id):
+                return self.render_feishu_format(
+                    processed_data,
+                    spreadsheet_token,
+                    sheet_id
+                )
+
+            @task(task_id='send_card_task')
+            def send_card_task(url):
+                return self.send_card(url)
+
+            # Define task dependencies
+            data = fetch_data_task()
+            processed_data = process_data_task(data)
+            file_info = create_feishu_file_task()
+            render_task = render_feishu_format_task(processed_data, file_info['spreadsheet_token'],
+                                                    file_info['cps_sheet_id'])
+            send_task = send_card_task(file_info['url'])
+
+            # Ensure proper execution order
+            render_task >> send_task
+
+        return generated_dag()
