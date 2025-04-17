@@ -11,7 +11,7 @@ default_args = {
     'owner': 'Fang Yongchao',
     'on_failure_callback': task_failure_callback,
     'retries': 10,
-    'retry_delay': 10
+    'retry_delay': pendulum.duration(seconds=10)
 }
 
 def generate_upsert_template(schema, table):
@@ -104,6 +104,17 @@ def get_child_folder(path):
 
 @dag(schedule_interval='0 */2 * * *', start_date=pendulum.datetime(2023, 1, 1), catchup=False,
      default_args=default_args, tags=['ods', 'src', 'crawler'], max_active_runs=1)
+def src_crawler_start():
+    @task(outlets=[Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/src/crawler_start')])
+    def src_crawler_start(**kwargs):
+        pass
+    src_crawler_start()
+src_crawler_start()
+
+
+@dag(schedule=Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/src/crawler_start'),
+     start_date=pendulum.datetime(2023, 1, 1), catchup=False,
+     default_args=default_args, tags=['ods', 'crawler'], max_active_runs=1)
 def ods_crawler_leader_commission_income():
     @task(outlets=[Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/ods/ods_crawler_leader_commission_income')])
     def ods_crawler_leader_commission_income():
@@ -161,8 +172,9 @@ def ods_crawler_leader_commission_income():
 ods_crawler_leader_commission_income()
 
 
-@dag(schedule_interval='0 */2 * * *', start_date=pendulum.datetime(2023, 1, 1), catchup=False,
-     default_args=default_args, tags=['ods', 'src', 'crawler'], max_active_runs=1)
+@dag(schedule=Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/ods/ods_crawler_leader_commission_income'),
+     start_date=pendulum.datetime(2023, 1, 1), catchup=False,
+     default_args=default_args, tags=['ods', 'crawler'], max_active_runs=1)
 def ods_crawler_recreation():
     @task(outlets=[Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/ods/ods_crawler_recreation')])
     def ods_crawler_recreation():
@@ -223,8 +235,9 @@ def ods_crawler_recreation():
 ods_crawler_recreation()
 
 
-@dag(schedule_interval='0 */2 * * *', start_date=pendulum.datetime(2023, 1, 1), catchup=False,
-     default_args=default_args, tags=['ods', 'src', 'crawler'], max_active_runs=1)
+@dag(schedule=Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/ods/ods_crawler_recreation'),
+     start_date=pendulum.datetime(2023, 1, 1), catchup=False,
+     default_args=default_args, tags=['ods', 'crawler'], max_active_runs=1)
 def ods_crawler_mcn_order():
     @task(outlets=[Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/ods/ods_crawler_mcn_order')])
     def ods_crawler_mcn_order():
@@ -247,3 +260,14 @@ def ods_crawler_mcn_order():
             logger.info(f'数据未更新，结束任务')
     ods_crawler_mcn_order()
 ods_crawler_mcn_order()
+
+
+@dag(schedule=Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/ods/ods_crawler_mcn_order'),
+     start_date=pendulum.datetime(2023, 1, 1), catchup=False,
+     default_args=default_args, tags=['ods', 'src', 'crawler'], max_active_runs=1)
+def src_crawler_finish():
+    @task(outlets=[Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/src/crawler_finish')])
+    def src_crawler_finish(**kwargs):
+        pass
+    src_crawler_finish()
+src_crawler_finish()

@@ -10,7 +10,7 @@ default_args = {
     'owner': 'Fang Yongchao',
     'on_failure_callback': task_failure_callback,
     'retries': 10,
-    'retry_delay': 10
+    'retry_delay': pendulum.duration(seconds=10)
 }
 
 
@@ -24,6 +24,17 @@ def excel_time_convert(timestamp):
 
 @dag(schedule_interval='0 */2 * * *', start_date=pendulum.datetime(2023, 1, 1), catchup=False,
      default_args=default_args, tags=['ods', 'feishu', 'src'])
+def src_fs_start():
+    @task(outlets=[Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/src/feishu_start')])
+    def src_fs_start():
+        pass
+    src_fs_start()
+src_fs_start()
+
+
+@dag(schedule=Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/src/feishu_start'),
+     start_date=pendulum.datetime(2023, 1, 1), catchup=False,
+     default_args=default_args, tags=['ods', 'feishu'])
 def ods_fs_gmv_target():
     @task(outlets=[Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/ods/ods_fs_gmv_target')])
     def ods_fs_gmv_target(**kwargs):
@@ -46,8 +57,9 @@ def ods_fs_gmv_target():
     ods_fs_gmv_target()
 ods_fs_gmv_target()
 
-@dag(schedule_interval='0 */2 * * *', start_date=pendulum.datetime(2023, 1, 1), catchup=False,
-     default_args=default_args, tags=['ods', 'feishu', 'src'])
+@dag(schedule=Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/ods/ods_fs_gmv_target'),
+     start_date=pendulum.datetime(2023, 1, 1), catchup=False,
+     default_args=default_args, tags=['ods', 'feishu'])
 def ods_fs_links():
     @task(outlets=[Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/ods/ods_fs_links')])
     def ods_fs_links(**kwargs):
@@ -88,8 +100,9 @@ def ods_fs_links():
 ods_fs_links()
 
 
-@dag(schedule_interval='0 */2 * * *', start_date=pendulum.datetime(2023, 1, 1), catchup=False,
-     default_args=default_args, tags=['ods', 'feishu', 'src'])
+@dag(schedule=Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/ods/ods_fs_links'),
+     start_date=pendulum.datetime(2023, 1, 1), catchup=False,
+     default_args=default_args, tags=['ods', 'feishu'])
 def ods_fs_slice_account():
     @task(outlets=[Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/ods/ods_fs_slice_account')])
     def ods_fs_slice_account(**kwargs):
@@ -116,3 +129,14 @@ def ods_fs_slice_account():
         logger.info(f'数据更新完成 {len(raw_data)} items')
     ods_fs_slice_account()
 ods_fs_slice_account()
+
+
+@dag(schedule=Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/ods/ods_fs_slice_account'),
+     start_date=pendulum.datetime(2023, 1, 1), catchup=False,
+     default_args=default_args, tags=['ods', 'feishu', 'src'])
+def src_fs_finish():
+    @task(outlets=[Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/src/feishu_finish')])
+    def src_fs_finish():
+        pass
+    src_fs_finish()
+src_fs_finish()

@@ -10,7 +10,7 @@ default_args = {
     'owner': 'Fang Yongchao',
     'on_failure_callback': task_failure_callback,
     'retries': 5, 
-    'retry_delay': 10
+    'retry_delay': pendulum.duration(seconds=10)
 }
 
 

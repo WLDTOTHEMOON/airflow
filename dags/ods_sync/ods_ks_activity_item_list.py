@@ -14,7 +14,7 @@ default_args = {
     'owner': 'Fang Yongchao',
     'on_failure_callback': task_failure_callback,
     'retries': 10,
-    'retry_delay': 10
+    'retry_delay': pendulum.duration(seconds=10)
 }
 
 @dag(schedule_interval=[Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/ods/ods_ks_activity_info')],

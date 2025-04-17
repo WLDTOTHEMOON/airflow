@@ -9,11 +9,13 @@ default_args = {
     'owner': 'Fang Yongchao',
     'on_failure_callback': task_failure_callback,
     'retries': 5, 
-    'retry_delay': 10
+    'retry_delay': pendulum.duration(seconds=10)
 }
 
 
-@dag(schedule=[Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/dim/dim_ks_account_info'), Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/dwd/dwd_ks_cps_order'), Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/ods/ods_fs_slice_account'),
+@dag(schedule=[Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/dim/dim_ks_account_info'),
+               Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/dwd/dwd_ks_cps_order'),
+               Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/src/feishu_finish'),
                Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/dwd/dwd_ks_leader_order')], 
      start_date=pendulum.datetime(2023, 1, 1), catchup=False,
      default_args=default_args, tags=['dws', 'etl'], max_active_runs=1)
