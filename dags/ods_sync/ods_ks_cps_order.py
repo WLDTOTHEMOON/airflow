@@ -20,7 +20,7 @@ default_args = {
 
 @dag(schedule=[Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/src/kuaishou_start')],
      start_date=pendulum.datetime(2023, 1, 1), catchup=False,
-     default_args=default_args, tags=['ods', 'src', 'kuaishou'],
+     default_args=default_args, tags=['ods', 'kuaishou'],
      max_active_tasks=3, max_active_runs=1)
 def ods_ks_cps_order():
     def timestamp2datetime(timestamp):

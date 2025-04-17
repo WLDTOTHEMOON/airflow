@@ -23,13 +23,13 @@ def excel_time_convert(timestamp):
         return xlrd.xldate_as_datetime(timestamp, 0)
 
 @dag(schedule_interval='0 */2 * * *', start_date=pendulum.datetime(2023, 1, 1), catchup=False,
-     default_args=default_args, tags=['ods', 'feishu', 'src'])
-def src_fs_start():
+     default_args=default_args, tags=['feishu', 'src'])
+def src_feishu_start():
     @task(outlets=[Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/src/feishu_start')])
-    def src_fs_start():
+    def src_feishu_start():
         pass
-    src_fs_start()
-src_fs_start()
+    src_feishu_start()
+src_feishu_start()
 
 
 @dag(schedule=Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/src/feishu_start'),
@@ -133,10 +133,10 @@ ods_fs_slice_account()
 
 @dag(schedule=Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/ods/ods_fs_slice_account'),
      start_date=pendulum.datetime(2023, 1, 1), catchup=False,
-     default_args=default_args, tags=['ods', 'feishu', 'src'])
-def src_fs_finish():
+     default_args=default_args, tags=['feishu', 'src'])
+def src_feishu_finish():
     @task(outlets=[Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/src/feishu_finish')])
-    def src_fs_finish():
+    def src_feishu_finish():
         pass
-    src_fs_finish()
-src_fs_finish()
+    src_feishu_finish()
+src_feishu_finish()

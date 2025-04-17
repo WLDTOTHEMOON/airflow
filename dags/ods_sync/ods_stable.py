@@ -16,7 +16,7 @@ default_args = {
 
 
 @dag(schedule_interval='0 */2 * * *', start_date=pendulum.datetime(2023, 1, 1), catchup=False,
-     default_args=default_args, tags=['ods', 'src', 'stable'], max_active_runs=1)
+     default_args=default_args, tags=['src', 'stable'], max_active_runs=1)
 def src_stable_start():
     @task(outlets=[Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/src/stable_start')])
     def src_stable_start(**kwargs):
@@ -59,7 +59,7 @@ ods_cps_order_fake()
 
 @dag(schedule=Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/ods/ods_cps_order_fake'),
      start_date=pendulum.datetime(2023, 1, 1), catchup=False,
-     default_args=default_args, tags=['ods', 'src', 'stable'], max_active_runs=1)
+     default_args=default_args, tags=['src', 'stable'], max_active_runs=1)
 def src_stable_finish():
     @task(outlets=[Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/src/stable_finish')])
     def src_stable_finish(**kwargs):

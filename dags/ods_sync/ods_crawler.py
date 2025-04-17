@@ -103,7 +103,7 @@ def get_child_folder(path):
 
 
 @dag(schedule_interval='0 */2 * * *', start_date=pendulum.datetime(2023, 1, 1), catchup=False,
-     default_args=default_args, tags=['ods', 'src', 'crawler'], max_active_runs=1)
+     default_args=default_args, tags=['src', 'crawler'], max_active_runs=1)
 def src_crawler_start():
     @task(outlets=[Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/src/crawler_start')])
     def src_crawler_start(**kwargs):
@@ -264,7 +264,7 @@ ods_crawler_mcn_order()
 
 @dag(schedule=Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/ods/ods_crawler_mcn_order'),
      start_date=pendulum.datetime(2023, 1, 1), catchup=False,
-     default_args=default_args, tags=['ods', 'src', 'crawler'], max_active_runs=1)
+     default_args=default_args, tags=['src', 'crawler'], max_active_runs=1)
 def src_crawler_finish():
     @task(outlets=[Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/src/crawler_finish')])
     def src_crawler_finish(**kwargs):

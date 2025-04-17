@@ -87,10 +87,10 @@ def read_and_sync(path, sql):
 
 
 @dag(schedule_interval='0 */2 * * *', start_date=pendulum.datetime(2023, 1, 1), catchup=False,
-     default_args=default_args, tags=['ods', 'src', 'platform'], max_active_runs=1)
-def src_pf_start():
+     default_args=default_args, tags=['src', 'platform'], max_active_runs=1)
+def src_platform_start():
     @task(outlets=[Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/src/platform_start')])
-    def src_pf_start(**kwargs):
+    def src_platform_start(**kwargs):
         from airflow.models import Variable
         begin_time = kwargs['data_interval_start']
         end_time = kwargs['data_interval_end']
@@ -100,8 +100,8 @@ def src_pf_start():
         Variable.set('ods_platform_begin_time', begin_time_fmt)
         Variable.set('ods_platform_end_time', end_time_fmt)
         logger.info(f'platform 相关数据ods更新 From {begin_time_fmt} to {end_time_fmt}')
-    src_pf_start()
-src_pf_start()
+    src_platform_start()
+src_platform_start()
 
 
 @dag(schedule=[Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/src/platform_start')],
@@ -296,10 +296,10 @@ ods_pf_supplier_class()
 
 @dag(schedule=Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/ods/ods_pf_suppliers_class'),
      start_date=pendulum.datetime(2023, 1, 1), catchup=False,
-     default_args=default_args, tags=['ods', 'src', 'platform'], max_active_runs=1)
-def src_pf_finish():
+     default_args=default_args, tags=['src', 'platform'], max_active_runs=1)
+def src_platform_finish():
     @task(outlets=[Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/src/platform_finish')])
-    def src_pf_finish(**kwargs):
+    def src_platform_finish(**kwargs):
         pass
-    src_pf_finish()
-src_pf_finish()
+    src_platform_finish()
+src_platform_finish()
