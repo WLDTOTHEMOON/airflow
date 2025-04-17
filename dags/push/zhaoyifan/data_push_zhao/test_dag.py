@@ -4,8 +4,7 @@ from typing import Dict, Any
 from dags.push.zhaoyifan.base_utils.feishu_provider import FeishuCardSender
 
 
-class DailySalesReportDAG(FeishuNotificationDAG):
-    """每日销售报告DAG"""
+class TestDAG(FeishuNotificationDAG):
 
     def __init__(self):
         super().__init__(
@@ -18,7 +17,7 @@ class DailySalesReportDAG(FeishuNotificationDAG):
         )
 
     def _create_dag(self):
-        dag = super().create_dag()
+        dag = super()._create_dag()
 
         # 覆盖任务组中的方法
         def fetch_data(date_interval: Dict[str, Any]) -> Dict[str, Any]:
@@ -88,4 +87,4 @@ class DailySalesReportDAG(FeishuNotificationDAG):
         return dag
 
 
-ly_sales_dag = DailySalesReportDAG().register()
+ly_sales_dag = TestDAG().register()

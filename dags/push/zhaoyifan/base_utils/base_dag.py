@@ -29,7 +29,7 @@ class FeishuNotificationDAG:
         self.card_version = card_version
         self.start_date = start_date
 
-    def create_dag(self):
+    def _create_dag(self):
         """创建DAG的模板方法"""
 
         @dag(
@@ -105,4 +105,4 @@ class FeishuNotificationDAG:
 
     def register(self):
         """注册DAG"""
-        return self.create_dag()
+        return self._create_dag()
