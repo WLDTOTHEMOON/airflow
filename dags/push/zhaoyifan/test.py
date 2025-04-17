@@ -1,6 +1,5 @@
 from airflow.decorators import dag, task, task_group
 import pendulum
-import logging
 
 CARD_ID = 'AAqRW5F1mUPZD'
 
@@ -103,7 +102,6 @@ def test_dag():
     def send_card(dat: dict):
         from include.feishu.feishu_robot import FeishuRobot
         from airflow.models import Variable
-        print(dat)
         res = {
             **dat['card'],
             **dat['sheet']['sheet_params'],
