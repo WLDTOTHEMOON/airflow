@@ -1,23 +1,22 @@
-from dags.push.zhaoyifan.base_utils.base_dag import FeishuNotificationDAG
+from dags.push.zhaoyifan.data_push_zhao.base_dag import FeishuNotificationDAG
 import pandas as pd
 from typing import Dict, Any
-from dags.push.zhaoyifan.base_utils.feishu_provider import FeishuCardSender
 
 
 class TestDAG(FeishuNotificationDAG):
 
     def __init__(self):
         super().__init__(
-            conn=self.conn,
-            feishu_sheet_supply=self.feishu_sheet_supply,
-            feishu_sheet=self.feishu_sheet,
             dag_id='test_data',
+            card_id='AAqRW5F1mUPZD',
+            robot_url='SELFTEST',
+            default_args={'ower': 'zhaoyifan'},
+            tags=['example'],
             schedule=None,
-            card_id='AAqRW5F1mUPZD'
         )
 
-    def _create_dag(self):
-        dag = super()._create_dag()
+    def create_dag(self):
+        dag = super().create_dag()
 
         # 覆盖任务组中的方法
         def fetch_data(date_interval: Dict[str, Any]) -> Dict[str, Any]:
@@ -75,10 +74,9 @@ class TestDAG(FeishuNotificationDAG):
                 'yes_date': results['sheet']['date_interval']['yes_ds'],
                 'month_start_date': results['sheet']['date_interval']['month_start_ds']
             }
-            sender = FeishuCardSender('SELFTEST')
-            sender.send_card(res, self.card_id, self.card_version)
+            self.feishu_robot.send_card(res, self.card_id, self.card_version)
 
-        # 动态替换任务组中的函数
+        # 动态替换dag中的任务函数
         dag.task_dict['fetch_data'].python_callable = fetch_data
         dag.task_group_dict['process_data'].task_dict['prepare_card'].python_callable = prepare_card
         dag.task_group_dict['process_data'].task_dict['write_to_sheet'].python_callable = write_to_sheet
@@ -88,3 +86,5 @@ class TestDAG(FeishuNotificationDAG):
 
 
 ly_sales_dag = TestDAG().register()
+
+

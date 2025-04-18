@@ -10,13 +10,9 @@ class FeishuSheetManager:
     """封装飞书表格操作"""
 
     def __init__(self):
-        config = Variable.get('feishu', deserialize_json=True)
-        self.app_id = config.get('app_id')
-        self.app_secret = config.get('app_secret')
-        self.feishu = FeishuSheet(self.app_id, self.app_secret)
+        self.feishu = FeishuSheet(**Variable.get('feishu'))
 
     def get_workbook_params(self, workbook_name: str, folder_token: str):
-        """创建工作簿"""
         spreadsheet = self.feishu.create_spreadsheet(workbook_name, folder_token)
         spreadsheet_token = spreadsheet['spreadsheet']['spreadsheet_token']
         workbook_url = spreadsheet['spreadsheet']['url']

@@ -1,9 +1,10 @@
 from airflow.decorators import dag, task, task_group
+from airflow.models import Variable
 import pendulum
 from typing import Dict, Any
 from include.database.mysql import engine
 from include.feishu.feishu_sheet import FeishuSheet
-from dags.push.zhaoyifan.base_utils.feishu_provider import FeishuSheetManager
+from dags.push.zhaoyifan.base_utils.feishu_provider import FeishuSheetManager, FeishuCardSender
 
 
 class FeishuNotificationDAG:
@@ -11,34 +12,35 @@ class FeishuNotificationDAG:
 
     def __init__(
             self,
-            conn: engine,
-            feishu_sheet_supply: FeishuSheetManager,
-            feishu_sheet: FeishuSheet,
             dag_id: str,
-            schedule: None,
+            default_args: dict,
+            tags: list[str],
             card_id: str,
+            robot_url: str,
             card_version: str = '1.0.0',
-            start_date: pendulum.datetime = pendulum.datetime(2023, 1, 1),
+            schedule: str = None,
     ):
-        self.conn = conn
-        self.feishu_sheet_supply = feishu_sheet_supply
-        self.feishu_sheet = feishu_sheet
+        self.conn = engine
+        self.feishu_sheet_supply = FeishuSheetManager
+        self.feishu_sheet = FeishuSheet(**Variable.get('feishu'))
+        self.feishu_robot = FeishuCardSender(robot_url)
         self.dag_id = dag_id
-        self.schedule = schedule
+        self.default_args = default_args
+        self.tags = tags
         self.card_id = card_id
         self.card_version = card_version
-        self.start_date = start_date
+        self.schedule = schedule
 
-    def _create_dag(self):
+    def create_dag(self):
         """创建DAG的模板方法"""
 
         @dag(
             dag_id=self.dag_id,
             schedule=self.schedule,
-            start_date=self.start_date,
+            start_date=pendulum.datetime(2023, 1, 1),
             catchup=False,
-            default_args={'owner': 'zhaoyifan'},
-            tags=['example']
+            default_args=self.default_args,
+            tags=self.tags
         )
         def generated_dag():
             @task
@@ -91,7 +93,6 @@ class FeishuNotificationDAG:
             @task
             def send_card(results: Dict[str, Any]) -> None:
                 """发送通知"""
-
                 # 由子类实现具体逻辑
                 raise NotImplementedError
 
@@ -105,4 +106,4 @@ class FeishuNotificationDAG:
 
     def register(self):
         """注册DAG"""
-        return self._create_dag()
+        return self.create_dag()

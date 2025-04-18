@@ -115,4 +115,5 @@ def test_dag():
     full_data_add = write_operations_group(data)
     send_card(full_data_add)
 
+
 test_dag()
