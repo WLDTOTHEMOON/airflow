@@ -1,6 +1,5 @@
 import logging
-import string
-from typing import Any, Dict
+from typing import Dict
 
 import pandas as pd
 import pendulum
@@ -14,18 +13,23 @@ class AbstractSupplementFlow(AbstractDagTask):
     def __init__(self):
         super().__init__(
             dag_id='push_supplement_flow',
-            schedule=None,
-            default_args={'owner': 'Lei Jiangling'},
+            schedule='0 21 * * *',
+            default_args=
+            {
+                'owner': 'Lei Jiangling',
+                'start_date': pendulum.datetime(2023, 1, 1),
+                'provide_context': True
+            },
             tags=['push', 'supplement_flow'],
             robot_url=Variable.get('TEST'),
         )
-        self.start_time: str = pendulum.now('Asia/Shanghai').subtract(days=92).strftime('%Y-%m-01')
         self.card_id: str = 'AAqRPrHrP2wKb'
-        self.title: str = ('待补流程链接_' + pendulum.now('Asia/Shanghai').subtract(days=92).strftime('%Y%m01') + '_' +
-                           pendulum.now('Asia/Shanghai').subtract(days=1).strftime('%Y%m%d') +
-                           pendulum.now('Asia/Shanghai').strftime('%Y%m%d%H%M'))
 
-    def fetch_data(self) -> pd.DataFrame:
+    def fetch_data(self, **kwargs) -> Dict:
+        start_time = kwargs['data_interval_end'].in_tz('Asia/Shanghai')
+        begin_time = start_time.subtract(days=92).strftime('%Y-%m-01')
+        logger.info(f'获取数据, 数据开始日期:{begin_time}')
+
         sql = f"""
             select
                 first_sell_date
@@ -42,8 +46,8 @@ class AbstractSupplementFlow(AbstractDagTask):
                         distinct
                         item_id
                         ,anchor_name
-                    from dws.dws_ks_ec_2hourly dbth
-                    where order_date >= %(start_time)s and order_date < current_date
+                    from dws.dws_ks_big_tbl dbth
+                    where order_date >= %(begin_time)s and order_date < current_date
                         and product_id is null
                         and account_id not in (
                             select
@@ -59,8 +63,8 @@ class AbstractSupplementFlow(AbstractDagTask):
                 select
                     item_id
                     ,sum(origin_gmv) origin_gmv
-                from dws.dws_ks_ec_2hourly dbth
-                where order_date >= %(start_time)s and order_date < current_date
+                from dws.dws_ks_big_tbl dbth
+                where order_date >= %(begin_time)s and order_date < current_date
                     and product_id is null
                     and account_id not in (
                         select
@@ -80,7 +84,7 @@ class AbstractSupplementFlow(AbstractDagTask):
                         item_id
                         ,item_title
                         ,row_number() over (partition by item_id order by item_title desc) rn
-                    from dws.dws_ks_ec_2hourly dbth ) info
+                    from dws.dws_ks_big_tbl dbth ) info
                 where rn = 1
             )iname on name.item_id = iname.item_id
             left join(
@@ -92,17 +96,21 @@ class AbstractSupplementFlow(AbstractDagTask):
                         order_date
                         ,item_id
                         ,row_number() over (partition by item_id order by order_date asc) rn
-                    from dws.dws_ks_ec_2hourly dkeh 
+                    from dws.dws_ks_big_tbl dkeh 
                     where order_date >= '2024-10-01' and order_date < current_date) src
                 where rn = 1
             )fsd on gmv.item_id = fsd.item_id
             order by
                 origin_gmv desc
         """
-        return pd.read_sql(sql, con=self.engine, params={'start_time': self.start_time})
+        supplement_flow_data = pd.read_sql(sql, con=self.engine, params={'begin_time': begin_time})
 
-    def process_data(self, data: pd.DataFrame) -> pd.DataFrame:
-        supplement_flow_df = data
+        return {
+            'supplement_flow_data': supplement_flow_data
+        }
+
+    def process_data(self, data: Dict, **kwargs) -> Dict:
+        supplement_flow_df = data['supplement_flow_data']
         supplement_flow_df['first_sell_date'] = supplement_flow_df['first_sell_date'].astype(str)
         supplement_flow_df = supplement_flow_df.rename(
             columns={
@@ -113,13 +121,18 @@ class AbstractSupplementFlow(AbstractDagTask):
                 'origin_gmv': '支付GMV'
             }
         )
-        return supplement_flow_df
+        return {
+            'process_supplement_flow_df': supplement_flow_df
+        }
 
-    def create_feishu_file(self) -> Dict:
+    def create_feishu_file(self, process_data_dict: Dict, **kwargs) -> Dict:
         logger.info(f'创建飞书文件')
+        start_time = kwargs['data_interval_end'].in_tz('Asia/Shanghai')
+        title = ('待补流程链接_' + start_time.subtract(days=92).strftime('%Y%m01') + '_' +
+                 start_time.subtract(days=1).strftime('%Y%m%d') + '_' + start_time.strftime('%Y%m%d%H%M'))
 
         result = self.feishu_sheet.create_spreadsheet(
-            title=self.title, folder_token='GIygfK0b5lndXCdIZqUcBygan4c'
+            title=title, folder_token='AolgfOvb7lzF2KdWj6hclit2nvb'
         )
         spreadsheet_token = result['spreadsheet']['spreadsheet_token']
         url = result['spreadsheet']['url']
@@ -129,53 +142,48 @@ class AbstractSupplementFlow(AbstractDagTask):
         return {
             'spreadsheet_token': spreadsheet_token,
             'cps_sheet_id': cps_sheet_id,
-            'url': url
+            'url': url,
+            'title': title
         }
 
     def render_feishu_format(
             self,
-            processed_data: pd.DataFrame,
+            process_data_dict: Dict,
             spreadsheet_token: str,
             cps_sheet_id: str
-    ):
-        def col_convert(col_num: int):
-            alphabeta = string.ascii_uppercase[:26]
-            alphabeta = [i for i in alphabeta] + [i + j for i in alphabeta for j in alphabeta]
-            return alphabeta[col_num - 1]
-
+    ) -> Dict:
         logger.info(f'渲染飞书格式')
-        # 示例渲染
-        logger.info(spreadsheet_token)
-        logger.info(cps_sheet_id)
+        process_data = process_data_dict['process_supplement_flow_df']
 
         cps_style_dict = {
-            'A1:' + col_convert(processed_data.shape[1]) + '1': {
+            'A1:' + self.col_convert(process_data.shape[1]) + '1': {
                 'font': {
                     'bold': True
                 },
                 'backColor': '#FFFF00'
             },
-            'A1:' + col_convert(processed_data.shape[1]) + str(processed_data.shape[0] + 1): {
+            'A1:' + self.col_convert(process_data.shape[1]) + str(process_data.shape[0] + 1): {
                 'hAlign': 1,
                 'vAlign': 1,
                 'borderType': 'FULL_BORDER'
             }
         }
 
-        self.feishu_sheet.write_df_replace(dat=processed_data, spreadsheet_token=spreadsheet_token,
+        self.feishu_sheet.write_df_replace(dat=process_data, spreadsheet_token=spreadsheet_token,
                                            sheet_id=cps_sheet_id)
 
         for key, value in cps_style_dict.items():
             self.feishu_sheet.style_cells(
                 spreadsheet_token=spreadsheet_token, sheet_id=cps_sheet_id, ranges=key, styles=value
             )
+        return process_data_dict
 
-    def send_card(self, url):
+    def send_card(self, url, title, process_data_dict):
         logger.info(f'发送卡片')
 
         data = {
             'title': '待补流程链接',
-            'file_name': self.title,
+            'file_name': title,
             'url': url,
             'description': '数据请见下方链接附件'
         }
