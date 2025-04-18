@@ -20,15 +20,7 @@ default_args = {
 def src_kuaishou_start():
     @task(outlets=[Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/src/kuaishou_start')])
     def src_kuaishou_start(**kwargs):
-        from airflow.models import Variable
-        begin_time = kwargs['data_interval_start']
-        end_time = kwargs['data_interval_end']
-        begin_time_fmt = begin_time.in_tz('Asia/Shanghai').format('YYYY-MM-DD HH:mm:ss')
-        end_time_fmt = end_time.in_tz('Asia/Shanghai').format('YYYY-MM-DD HH:mm:ss')
-
-        Variable.set('ods_kuaishou_begin_time', begin_time_fmt)
-        Variable.set('ods_kuaishou_end_time', end_time_fmt)
-        logger.info(f'kuaishou 相关数据ods更新 From {begin_time_fmt} to {end_time_fmt}')
+        pass
     src_kuaishou_start()
 src_kuaishou_start()
 
@@ -42,14 +34,6 @@ src_kuaishou_start()
 def src_kuaishou_finish():
     @task(outlets=[Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/src/kuaishou_finish')])
     def src_kuaishou_finish(**kwargs):
-        from airflow.models import Variable
-        begin_time = kwargs['data_interval_start']
-        end_time = kwargs['data_interval_end']
-        begin_time_fmt = begin_time.in_tz('Asia/Shanghai').format('YYYY-MM-DD HH:mm:ss')
-        end_time_fmt = end_time.in_tz('Asia/Shanghai').format('YYYY-MM-DD HH:mm:ss')
-
-        Variable.set('ods_kuaishou_begin_time', begin_time_fmt)
-        Variable.set('ods_kuaishou_end_time', end_time_fmt)
-        logger.info(f'kuaishou 相关数据ods更新 From {begin_time_fmt} to {end_time_fmt}')
+        pass
     src_kuaishou_finish()
 src_kuaishou_finish()
