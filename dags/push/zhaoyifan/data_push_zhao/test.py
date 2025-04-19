@@ -1,10 +1,11 @@
 from airflow.decorators import dag, task, task_group
 import pendulum
 
+
 CARD_ID = 'AAqRW5F1mUPZD'
 
 
-@dag(schedule=None, start_date=pendulum.datetime(2023, 1, 1),catchup=False,
+@dag(schedule=None, start_date=pendulum.datetime(2023, 1, 1), catchup=False,
      default_args={'owner': 'zhaoyifan'}, tags=['example'])
 def test_dag():
     @task
