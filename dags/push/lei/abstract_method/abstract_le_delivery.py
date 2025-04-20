@@ -72,7 +72,7 @@ class AbstractLeDelivery(AbstractDagTask):
         processed_data['order_date'] = processed_data['order_date'].astype(str)
 
         # 筛选出小于60的数据
-        group_table_data = processed_data[processed_data.send_rate < 60]
+        group_table_data = processed_data[processed_data.send_rate < 0.6]
         res = []
         for i in range(group_table_data.shape[0]):
             res.append({
