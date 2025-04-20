@@ -109,7 +109,7 @@ class AbstractLeDelivery(AbstractDagTask):
         }
 
     def create_feishu_file(self, process_data_dict: Dict, **kwargs) -> Dict:
-        start_time = kwargs['data_interval_end']
+        start_time = kwargs['data_interval_end'].in_tz('Asia/Shanghai')
         title = '发货进度监控_' + start_time.strftime('%Y%m%d') + '_' + start_time.strftime('%Y%m%d%H%M%S')
 
         result = self.feishu_sheet.create_spreadsheet(
