@@ -43,7 +43,7 @@ class AbstractTdCover(AbstractDagTask):
                         ,account_id
                         ,anchor_name
                         ,product_id
-                from dws.dws_ks_ec_2hourly dkeh
+                from dws.dws_ks_big_tbl dkeh
                 where order_date between %(begin_time)s and %(end_time)s
                         and bd_name is not null
                         and anchor_name != '乐总'
@@ -64,7 +64,7 @@ class AbstractTdCover(AbstractDagTask):
                         bd_name
                         ,anchor_name
                         ,product_id
-                from dws.dws_ks_ec_2hourly dkeh
+                from dws.dws_ks_big_tbl dkeh
                 where order_date between %(begin_time)s and %(end_time)s
                         and bd_name is not null
                         and anchor_name != '乐总'
