@@ -28,11 +28,12 @@ class AbstractAnchorSettlement(AbstractDagTask):
     def fetch_data(self, **kwargs) -> Dict:
         logger.info(f'获取数据')
         start_time = kwargs['data_interval_end'].in_tz('Asia/Shanghai')
-        begin_time = start_time.subtract(days=1).strftime('%Y-%m-%d 00:00:00')
+        begin_time = start_time.subtract(days=1).strftime('%Y-%m-01 00:00:00')
         end_time = start_time.subtract(days=1).strftime('%Y-%m-%d 23:59:59')
         sql = """
              select
-                dkco.account_id
+                date(settlement_success_time) order_date
+                ,dkco.account_id
                 ,anchor_name
                 ,sum(settlement_amount) settlement_amount
                 ,sum(coalesce(leader_settlement_amount,0)) leader_settlement_amount
@@ -46,24 +47,205 @@ class AbstractAnchorSettlement(AbstractDagTask):
             ) ai on dkco.account_id = ai.account_id
             where settlement_success_time between %(begin_time)s and %(end_time)s
             group by
-                1,2
+                1,2,3
             order by
-                settlement_amount desc
+                order_date asc
+                ,settlement_amount desc
         """
         anchor_settlement_df = pd.read_sql(sql, self.engine, params={'begin_time': begin_time, 'end_time': end_time})
+
+        slice_sql = """
+            select 
+                date
+                ,sum(estimated_service_income) estimated_service_income
+                ,sum(estimated_income) estimated_income
+                ,sum(estimated_service_income + estimated_income) tol_income
+            from (
+            -- A端剪手
+             select 
+                 date(settlement_success_time) date
+                 ,'A端剪手'
+                 ,sum(estimated_service_income) estimated_service_income 
+                 ,sum(estimated_income) estimated_income 
+             from (
+                 select 
+                     anchor_id
+                     ,start_time
+                     ,end_time
+                 from ods.ods_slice_account
+                 where anchor_id not in ('173119688') -- 这个账号只是作为二创作者存在的
+             )A
+             inner join ( 
+                 select 
+                     account_id
+                     ,order_create_time
+                     ,order_trade_amount 
+                     ,settlement_success_time 
+                     ,coalesce(estimated_income,0) estimated_income 
+                     ,coalesce(estimated_service_income,0) estimated_service_income  
+                 from dwd.dwd_ks_cps_order
+                 where o_id not in (select o_id from dwd.dwd_ks_recreation)
+                     -- 自有剪手'3054930335'账号自2024-06-11后成为二创达人IP，
+                    -- 为保留这个账号历史数据以及不重复计算，故需在这块抛除掉它以后产生的二创订单
+                         and settlement_success_time between %(begin_time)s and %(end_time)s
+                         and cps_order_status = '已结算'
+             )src on A.anchor_id = src.account_id
+                 and src.order_create_time between A.start_time and A.end_time
+            group by 
+                    1,2        
+            union all
+            -- A端二创
+            select 
+                 date(settlement_success_time ) date
+                 ,'A端二创'
+                 ,sum(leader_origin_estimated_service_income + leader_keep_estimated_service_income) estimated_service_income
+                 ,sum(anchor_keep_estimated_income + leader_share_estimated_income) estimated_income
+             from (
+                 select 
+                     anchor_id
+                     ,start_time
+                     ,end_time
+                 from ods.ods_slice_account
+             )A
+             inner join (
+                 select 
+                     author_id
+                     ,order_create_time
+                     ,settlement_success_time 
+                     ,coalesce(anchor_keep_estimated_income,0) anchor_keep_estimated_income  
+                     ,coalesce(leader_origin_estimated_service_income,0) leader_origin_estimated_service_income 
+                     ,coalesce(leader_share_estimated_income,0) leader_share_estimated_income 
+                     ,coalesce(leader_keep_estimated_service_income,0) leader_keep_estimated_service_income 
+                 from dwd.dwd_ks_leader_commission_income
+                 where settlement_success_time between %(begin_time)s and %(end_time)s
+                         and cps_order_status = '已结算'
+             )com on A.anchor_id = com.author_id
+                 and com.order_create_time between A.start_time and A.end_time
+            group by 
+                    1,2
+            ) tol
+            group by 
+                    1
+            union all
+            select 
+                    date 
+                    ,sum(estimated_service_income) estimated_service_income
+                    ,sum(estimated_income) estimated_income
+                    ,sum(estimated_service_income + estimated_income) tol_income
+            from (
+            -- B端剪手  
+            select 
+                date(settlement_success_time) date
+                ,'B端剪手' 
+                ,sum(coalesce(estimated_service_income,0)) estimated_service_income
+                ,0 estimated_income
+            from dwd.dwd_ks_leader_order 
+            where activity_id in ('5084323902','5142199902','4920930902','6701551902','6244252902', '7469588902')
+                and promotion_id not in (select anchor_id from ods.ods_slice_account)
+                and settlement_success_time between %(begin_time)s and %(end_time)s
+                and cps_order_status = '已结算'
+            group by 
+                    1,2
+            union all
+            -- B端二创
+            select 
+                date(settlement_success_time) date
+                ,'B端二创'
+                ,sum(coalesce(estimated_service_income, 0)) estimated_service_income
+                ,sum(coalesce(estimated_income, 0)) estimated_income    
+            from dwd.dwd_ks_recreation
+            where o_id not in (select o_id from dwd.dwd_ks_leader_commission_income)
+                    and settlement_success_time between %(begin_time)s and %(end_time)s
+              and cps_order_status = '已结算'
+            group by 
+                    1,2
+            )tol
+            group by 
+                    1
+            union all
+            select 
+                    date
+                    ,sum(estimated_service_income) estimated_service_income
+                    ,sum(estimated_income) estimated_income
+                    ,sum(estimated_service_income + estimated_income) tol_income
+            from (
+            -- C端剪手
+            select 
+                date(settlement_success_time) date
+                ,'C端剪手' 
+                ,sum(coalesce(estimated_service_income,0)) estimated_service_income
+                ,0 estimated_income
+            from dwd.dwd_ks_leader_order 
+            where activity_id = '5084317902'
+                and promotion_id not in (select anchor_id from ods.ods_slice_account)
+                and settlement_success_time between %(begin_time)s and %(end_time)s
+                and cps_order_status = '已结算'
+            group by 
+                    1,2
+            union all 
+            -- C端二创
+            select 
+                 date(settlement_success_time ) date
+                 ,'C端二创'
+                 ,sum(leader_origin_estimated_service_income + leader_keep_estimated_service_income) estimated_service_income
+                 ,sum(anchor_keep_estimated_income + leader_share_estimated_income) estimated_income
+             from ( 
+                 select 
+                     author_id
+                     ,settlement_success_time 
+                     ,coalesce(anchor_keep_estimated_income,0) anchor_keep_estimated_income  
+                     ,coalesce(leader_origin_estimated_service_income,0) leader_origin_estimated_service_income 
+                     ,0 leader_share_estimated_income 
+                     ,coalesce(leader_keep_estimated_service_income,0) leader_keep_estimated_service_income 
+                 from dwd.dwd_ks_leader_commission_income
+                 where settlement_success_time between %(begin_time)s and %(end_time)s
+                         and cps_order_status = '已结算'
+            ) com
+             left join (
+                 select 
+                     anchor_id
+                 from ods.ods_slice_account
+             )A on com.author_id = A.anchor_id  
+             where A.anchor_id is null
+            group by 
+                    1,2
+            )tol
+            group by
+                    1
+        """
+        slice_df = pd.read_sql(slice_sql, self.engine, params={'begin_time': begin_time, 'end_time': end_time})
         return {
-            'anchor_settlement_data': anchor_settlement_df
+            'anchor_settlement_data': anchor_settlement_df,
+            'slice_df': slice_df
         }
 
     def process_data(self, data: Dict, **kwargs) -> Dict:
         logger.info(f'处理数据')
         anchor_settlement_data = data['anchor_settlement_data']
-        anchor_settlement_data = anchor_settlement_data.rename(columns={
+        slice_df = data['slice_df']
+
+        slice_data = slice_df.groupby('date')[['estimated_income', 'estimated_service_income']].sum().reset_index()
+        slice_data['account_id'] = '切片'
+        slice_data['anchor_name'] = '切片'
+        slice_data = slice_data.rename(columns={
+            'date': 'order_date',
+            'estimated_income': 'settlement_amount',
+            'estimated_service_income': 'leader_settlement_amount'
+        })
+        slice_data = slice_data[['order_date', 'account_id', 'anchor_name', 'settlement_amount',
+                                 'leader_settlement_amount']]
+        merged_df = pd.concat([anchor_settlement_data, slice_data], ignore_index=True)
+
+        merged_df.order_date = merged_df.order_date.astype('str')
+
+        anchor_settlement_data = merged_df.rename(columns={
+            'order_date': '结算日期',
             'account_id': '账号ID',
             'anchor_name': '主播名称',
             'settlement_amount': '主播端结算金额',
             'leader_settlement_amount': '团长端结算金额',
         })
+
         return {
             'process_data': anchor_settlement_data
         }
@@ -71,7 +253,8 @@ class AbstractAnchorSettlement(AbstractDagTask):
     def create_feishu_file(self, data_dic: Dict, **kwargs) -> Dict:
         logger.info(f'创建飞书文件')
         start_time = kwargs['data_interval_end'].in_tz('Asia/Shanghai')
-        title = ('主播佣金结算_' + start_time.subtract(days=1).strftime('%Y%m%d') + '_' + start_time.strftime('%Y%m%d%H%M'))
+        title = ('主播佣金结算_' + start_time.subtract(days=1).strftime('%Y%m%d') + '_' + start_time.strftime(
+            '%Y%m%d%H%M'))
 
         result = self.feishu_sheet.create_spreadsheet(
             title=title, folder_token='TIxUfix3jlM7TFdwr3gcletOnkh'
