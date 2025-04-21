@@ -116,10 +116,10 @@ class FeishuNotificationDAG(ABC):
             # 任务流定义
             dates = get_date_params()
             data = fetch_data(dates)
-            card = prepare_card(data)
-            sheet = write_to_sheet(data)
+            card_data = prepare_card(data)
+            sheet_data = write_to_sheet(data)
             # # processed = process_data(data)
-            send_card(card, sheet)
+            send_card(card_data, sheet_data)
 
         return generated_dag()
 

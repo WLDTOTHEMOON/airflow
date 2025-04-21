@@ -62,6 +62,7 @@ class GmvDag(FeishuNotificationDAG):
         )
 
         sheet_id = self.feishu_sheet_supply.get_sheet_params('测试数据', spreadsheet_token)
+        print(f"Type of sheet: {type(sheet_id)}")  # 关键调试信息
 
         self.feishu_sheet.write_df_replace(df, spreadsheet_token, sheet_id, to_char=False)
         return {
