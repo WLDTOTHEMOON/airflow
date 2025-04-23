@@ -47,7 +47,7 @@ class AbstractDagTask(ABC):
         return str(round(num * 100, 2)) + '%'
 
     @abstractmethod
-    def fetch_data(self, start_time) -> Any:
+    def fetch_data(self, **kwargs) -> Dict:
         """Fetch raw data from source"""
         raise NotImplementedError
 
