@@ -20,7 +20,7 @@ class FeishuNotificationDAG(ABC):
             dag_id: str,
             default_args: dict,
             tags: list[str],
-            # card_id: str,
+            card_id: str,
             robot_url: str,
             schedule: Any
     ):
@@ -32,7 +32,7 @@ class FeishuNotificationDAG(ABC):
         self.dag_id = dag_id
         self.default_args = default_args
         self.tags = tags
-        # self.card_id = card_id
+        self.card_id = card_id
         self.schedule = schedule
 
     @abstractmethod

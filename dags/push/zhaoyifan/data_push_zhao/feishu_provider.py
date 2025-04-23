@@ -23,8 +23,8 @@ class FeishuSheetManager:
         workbook_url = spreadsheet['spreadsheet']['url']
         return workbook_url, spreadsheet_token
 
-    def get_sheet_params(self, sheet_name, spreadsheet_token):
-        sheet_id = self.feishu.create_sheet(sheet_name, spreadsheet_token)
+    def get_sheet_params(self, spreadsheet_token, sheet_name: str,):
+        sheet_id = self.feishu.create_sheet(spreadsheet_token, sheet_name)
         print(f"Content of sheet: {sheet_id}")  # 查看原始内容
         print(f"Type of sheet: {type(sheet_id)}")  # 关键调试信息
         sheet_id = sheet_id['replies'][0]['addSheet']['properties']['sheetId']

@@ -12,10 +12,10 @@ class GmvDag(FeishuNotificationDAG):
             dag_id='gmv',
             default_args={'owner': 'zhaoyifan'},
             robot_url='SELFTEST',
+            card_id='AAqRW5F1mUPZD',
             tags=['example'],
             schedule=None
         )
-        self.card_id = 'AAqRW5F1mUPZD'
 
     def fetch_data_logic(self, date_interval: dict):
         sql = f'''
@@ -61,13 +61,13 @@ class GmvDag(FeishuNotificationDAG):
             workbook_name,folder_token='Fn9ZfxSxylvMSsdwzGwcZPEGn9j'
         )
 
-        sheet_id = self.feishu_sheet_supply.get_sheet_params('测试数据', spreadsheet_token)
+        sheet_id = self.feishu_sheet_supply.get_sheet_params(spreadsheet_token, '测试数据',)
         print(f"Type of sheet: {type(sheet_id)}")  # 关键调试信息
 
         self.feishu_sheet.write_df_replace(df, spreadsheet_token, sheet_id, to_char=False)
         return {
             'sheet_params': {
-                'workbook_name': workbook_name,
+                'sheet_title': workbook_name,
                 'url': workbook_url
             },
             'date_interval': date_interval
