@@ -13,7 +13,7 @@ class AbstractEstimatePnl(AbstractDagTask):
     def __init__(self):
         super().__init__(
             dag_id='push_estimate_pnl',
-            schedule='0 21 * * *',
+            schedule='0 5 * * *',
             default_args=
             {
                 'owner': 'Lei Jiangling',
