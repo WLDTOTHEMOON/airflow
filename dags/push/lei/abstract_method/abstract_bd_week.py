@@ -13,7 +13,7 @@ class AbstractBdWeek(AbstractDagTask):
     def __init__(self):
         super().__init__(
             dag_id='push_bd_week',
-            schedule='0 21 * * *',
+            schedule='0 21 * * 1',
             default_args=
             {
                 'owner': 'Lei Jiangling',
