@@ -8,11 +8,10 @@ from include.database.mysql import engine
 from include.feishu.feishu_sheet import FeishuSheet
 from include.feishu.feishu_robot import FeishuRobot
 from dags.push.zhaoyifan.data_push_zhao.feishu_provider import FeishuSheetManager
-
-
 # logger = logging.getLogger(__name__)
 
-class FeishuNotificationDAG(ABC):
+
+class BaseDag(ABC):
     """飞书通知DAG基类"""
 
     def __init__(
@@ -24,7 +23,6 @@ class FeishuNotificationDAG(ABC):
             robot_url: str,
             schedule: Any
     ):
-        # logger.debug("Initializing FeishuNotificationDAG")
         self.conn = engine
         self.feishu_sheet_supply = FeishuSheetManager()
         self.feishu_sheet = FeishuSheet(**Variable.get('feishu', deserialize_json=True))
@@ -57,7 +55,6 @@ class FeishuNotificationDAG(ABC):
 
     def create_dag(self):
         """生成DAG的模板方法（无需子类修改）"""
-
         @dag(
             dag_id=self.dag_id,
             schedule=self.schedule,
@@ -96,7 +93,6 @@ class FeishuNotificationDAG(ABC):
             def prepare_card(data: Dict[str, Any]) -> Dict[str, Any]:
                 return self.prepare_card_logic(data)
 
-            #
             @task
             def write_to_sheet(data: Dict[str, Any]) -> Dict[str, Any]:
                 return self.write_to_sheet_logic(data)
@@ -118,7 +114,7 @@ class FeishuNotificationDAG(ABC):
             data = fetch_data(dates)
             card_data = prepare_card(data)
             sheet_data = write_to_sheet(data)
-            # # processed = process_data(data)
+            # # # processed = process_data(data)
             send_card(card_data, sheet_data)
 
         return generated_dag()

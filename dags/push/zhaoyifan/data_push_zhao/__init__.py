@@ -1,1 +1,1 @@
-from dags.push.zhaoyifan.data_push_zhao.base_dag import FeishuNotificationDAG
+from dags.push.zhaoyifan.data_push_zhao.base_dag import BaseDag

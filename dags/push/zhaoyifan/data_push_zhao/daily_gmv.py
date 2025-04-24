@@ -2,11 +2,11 @@ from abc import ABC
 
 from airflow.decorators import dag, task
 import pendulum
-from dags.push.zhaoyifan.data_push_zhao.base_dag import FeishuNotificationDAG
+from dags.push.zhaoyifan.data_push_zhao.base_dag import BaseDag
 import pandas as pd
 
 
-class GmvDag(FeishuNotificationDAG):
+class GmvDag(BaseDag):
     def __init__(self):
         super().__init__(
             dag_id='gmv',
