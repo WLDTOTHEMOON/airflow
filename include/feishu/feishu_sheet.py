@@ -241,7 +241,7 @@ class FeishuSheet(FeishuClient):
     def write_df_append(self, dat, spreadsheet_token, sheet_id, to_char=True):
         first_col = self.read_cells(spreadsheet_token=spreadsheet_token, sheet_id=sheet_id, ranges='A1:A99999')
         row_num = next(i for i, x in enumerate(first_col['valueRanges'][0]['values']) if x == [None])
-        self.write_df_to_cell(spreadsheet_token=spreadsheet_token, sheet_id=sheet_id, start_row=row_num + 1, start_col=1, with_headers=False, to_char=to_char)
+        self.write_df_to_cell(dat=dat, spreadsheet_token=spreadsheet_token, sheet_id=sheet_id, start_row=row_num + 1, start_col=1, with_headers=False, to_char=to_char)
 
     def fetch_dat(self, spreadsheet_token, sheet_id):
         first_row = self.read_cells(spreadsheet_token=spreadsheet_token, sheet_id=sheet_id, ranges='A1:AZ1')
