@@ -120,7 +120,8 @@ class AbstractSliceDelivery(AbstractDagTask):
         # 卡片数据处理
         group_data = process_data[process_data.send_rate < 0.6]
         group_data = group_data.groupby('item_title')[['final_order_number', 'wait_send_order_number']].sum().reset_index()
-        group_data['send_rate'] = group_data['wait_send_order_number'] / group_data['final_order_number']
+        group_data['send_rate'] = 1 - group_data['wait_send_order_number'] / group_data['final_order_number']
+        group_data = group_data.sort_values('wait_send_order_number', ascending=False)
         res = []
         for i in range(group_data.shape[0]):
             res.append({
