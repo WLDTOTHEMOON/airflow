@@ -13,7 +13,7 @@ class BasePerformanceDaily(BaseDag):
             dag_id='push_performance_daily',
             default_args={'owner': 'zhaoyifan',},
             tags=['push', 'performance_daily'],
-            robot_url=Variable.get('SELFTEST'),
+            robot_url=Variable.get('TEST'),
             schedule='0 5 * * *'
         )
         self.card_id = ['AAq4Y3orMfVcg', 'AAq4Y35W9y9hv']
