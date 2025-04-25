@@ -5,16 +5,17 @@ import pendulum
 import pandas as pd
 from airflow.models import Variable
 from dags.push.zhaoyifan.data_push_zhao.base_dag import BaseDag
+from dags.push.zhaoyifan.data_push_zhao.format_utils import *
 
 
-class BasePerformanceDaily(BaseDag):
+class PerformanceDaily(BaseDag):
     def __init__(self):
         super().__init__(
             dag_id='push_performance_daily',
             default_args={'owner': 'zhaoyifan'},
             tags=['push', 'performance_daily'],
-            robot_url=Variable.get('SELFTEST'),
-            schedule=None
+            robot_url=Variable.get('TEST'),
+            schedule='0 5 * * *'
         )
         self.card_id = ['AAq4Y3orMfVcg', 'AAq4Y35W9y9hv']
 
@@ -135,9 +136,9 @@ class BasePerformanceDaily(BaseDag):
           '''
 
         yes_tol_df = pd.read_sql(leader_day_pf_sql, self.engine)
-        yes_tol_df.origin_gmv = yes_tol_df.origin_gmv.apply(self.amount_convert)
-        yes_tol_df.final_gmv = yes_tol_df.final_gmv.apply(self.amount_convert)
-        yes_tol_df.commission_income = yes_tol_df.commission_income.apply(self.amount_convert)
+        yes_tol_df.origin_gmv = yes_tol_df.origin_gmv.apply(amount_convert)
+        yes_tol_df.final_gmv = yes_tol_df.final_gmv.apply(amount_convert)
+        yes_tol_df.commission_income = yes_tol_df.commission_income.apply(amount_convert)
 
         leader_month_target_sql = f'''
             select
@@ -230,9 +231,9 @@ class BasePerformanceDaily(BaseDag):
         '''
         tol_df = pd.read_sql(leader_month_target_sql, self.engine)
         month_tol_df = tol_df[['project', 'origin_gmv', 'final_gmv', 'final_rate', 'income']]
-        month_tol_df.origin_gmv = month_tol_df.origin_gmv.apply(self.amount_convert)
-        month_tol_df.final_gmv = month_tol_df.final_gmv.apply(self.amount_convert)
-        month_tol_df.income = month_tol_df.income.apply(self.amount_convert)
+        month_tol_df.origin_gmv = month_tol_df.origin_gmv.apply(amount_convert)
+        month_tol_df.final_gmv = month_tol_df.final_gmv.apply(amount_convert)
+        month_tol_df.income = month_tol_df.income.apply(amount_convert)
 
         month_target_tol_df = tol_df[['project', 'final_gmv', 'target_final', 'target_success_rate', 'income']]
 
@@ -410,8 +411,8 @@ class BasePerformanceDaily(BaseDag):
             })
 
         month_target_tol_df = data_dict['df']['month_target_tol_df']
-        month_target_tol_df.final_gmv = month_target_tol_df.final_gmv.apply(self.amount_convert)
-        month_target_tol_df.target_final = month_target_tol_df.target_final.apply(self.amount_convert)
+        month_target_tol_df.final_gmv = month_target_tol_df.final_gmv.apply(amount_convert)
+        month_target_tol_df.target_final = month_target_tol_df.target_final.apply(amount_convert)
         anchor_data = []
         for i in range(month_target_tol_df.shape[0]):
             anchor_target_formatted = month_target_tol_df.target_final.iloc[i]
@@ -472,4 +473,4 @@ class BasePerformanceDaily(BaseDag):
         self.feishu_robot.send_msg_card(data=res_2, card_id=self.card_id[1], version_name='1.0.2')
 
 
-dag = BasePerformanceDaily().create_dag()
+dag = PerformanceDaily().create_dag()

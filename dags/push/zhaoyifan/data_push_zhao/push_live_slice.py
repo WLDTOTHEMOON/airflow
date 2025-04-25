@@ -5,18 +5,18 @@ import pandas as pd
 import pendulum
 from airflow.models import Variable
 from dags.push.zhaoyifan.data_push_zhao.base_dag import BaseDag
-
+from dags.push.zhaoyifan.data_push_zhao.format_utils import *
 logger = logging.getLogger(__name__)
 
 
-class AbstractCrawlerLog(BaseDag):
+class LiveSlice(BaseDag):
     def __init__(self):
         super().__init__(
             dag_id='push_live_slice',
             default_args={'owner': 'zhaoyifan'},
-            robot_url=Variable.get('SELFTEST'),
+            robot_url=Variable.get('TEST'),
             tags=['push', 'live_slice'],
-            schedule=None
+            schedule='0 5 * * *'
         )
         self.card_id = 'AAqRWKhJEyCYM'
 
@@ -223,8 +223,8 @@ class AbstractCrawlerLog(BaseDag):
             'date_interval': date_interval
         }
 
-    def prepare_card_logic(self, data: Dict, **kwargs) -> Dict:
-        yes_each_tol_df = data['df']['yes_each_tol_df']
+    def prepare_card_logic(self, data_dict: Dict[str, Any]) -> Dict[str, Any]:
+        yes_each_tol_df = data_dict['df']['yes_each_tol_df']
         yes_group_slice_tol = []
         for i in range(yes_each_tol_df.shape[0]):
             yes_group_slice_tol.append({
@@ -234,7 +234,7 @@ class AbstractCrawlerLog(BaseDag):
                 'origin_order_number': str(int(yes_each_tol_df.origin_order_number.iloc[i])),
                 'tol_income': str(round(yes_each_tol_df.tol_income.iloc[i], 2))
             })
-        each_tol_df = data['df']['each_tol_df']
+        each_tol_df = data_dict['df']['each_tol_df']
         group_slice_tol = []
         for i in range(each_tol_df.shape[0]):
             group_slice_tol.append({
@@ -245,33 +245,33 @@ class AbstractCrawlerLog(BaseDag):
                 'tol_income': str(round(each_tol_df.tol_income.iloc[i], 2))
             })
         return {
-            'time_scope': data['date_interval']['month_start_ds'] + ' to ' + data['date_interval']['yes_ds'],
-            'slice_yes_date': data['date_interval']['yes_ds'],
-            'slice_yes_origin_gmv': str(round(data['df']['yes_tol_df'].origin_gmv.iloc[0], 2)),
-            'slice_yes_final_gmv': str(round(data['df']['yes_tol_df'].final_gmv.iloc[0], 2)),
-            'slice_yes_origin_num': str(round(data['df']['yes_tol_df'].origin_order_number.iloc[0], 2)),
-            'slice_yes_income': str(round(data['df']['yes_tol_df'].tol_income.iloc[0], 2)),
-            'slice_tol_origin_gmv': str(round(data['df']['tol_df'].origin_gmv.iloc[0], 2)),
-            'slice_tol_final_gmv': str(round(data['df']['tol_df'].final_gmv.iloc[0], 2)),
-            'slice_tol_origin_num': str(round(data['df']['tol_df'].origin_order_number.iloc[0], 2)),
-            'slice_tol_income': str(round(data['df']['tol_df'].tol_income.iloc[0], 2)),
+            'time_scope': data_dict['date_interval']['month_start_ds'] + ' to ' + data_dict['date_interval']['yes_ds'],
+            'slice_yes_date': data_dict['date_interval']['yes_ds'],
+            'slice_yes_origin_gmv': str(round(data_dict['df']['yes_tol_df'].origin_gmv.iloc[0], 2)),
+            'slice_yes_final_gmv': str(round(data_dict['df']['yes_tol_df'].final_gmv.iloc[0], 2)),
+            'slice_yes_origin_num': str(round(data_dict['df']['yes_tol_df'].origin_order_number.iloc[0], 2)),
+            'slice_yes_income': str(round(data_dict['df']['yes_tol_df'].tol_income.iloc[0], 2)),
+            'slice_tol_origin_gmv': str(round(data_dict['df']['tol_df'].origin_gmv.iloc[0], 2)),
+            'slice_tol_final_gmv': str(round(data_dict['df']['tol_df'].final_gmv.iloc[0], 2)),
+            'slice_tol_origin_num': str(round(data_dict['df']['tol_df'].origin_order_number.iloc[0], 2)),
+            'slice_tol_income': str(round(data_dict['df']['tol_df'].tol_income.iloc[0], 2)),
             'yes_group_slice_tol': yes_group_slice_tol,
             'group_slice_tol': group_slice_tol
         }
 
-    def write_to_sheet_logic(self, data: Dict[str, Any]) -> Dict[str, Any]:
-        all_df = data['df']['all_df']
+    def write_to_sheet_logic(self, data_dict: Dict[str, Any]) -> Dict[str, Any]:
+        all_df = data_dict['df']['all_df']
         belong_sum_df = all_df.groupby(['slice_belong', 'port', 'account_id'], as_index=False).sum(
             numeric_only=True)
         belong_sum_df = belong_sum_df.sort_values(['slice_belong', 'port'])
-        data['df']['df_total'].rename(columns={
+        data_dict['df']['df_total'].rename(columns={
             'slice_belong': '切片归属',
             'origin_gmv': '支付GMV',
             'final_gmv': '结算GMV',
             'origin_order_number': '支付订单数',
             'tol_income': '预估收入'
         }, inplace=True)
-        data['df']['accum_le_rank_items'].rename(columns={
+        data_dict['df']['accum_le_rank_items'].rename(columns={
             'row_num': '排名',
             'item_title': '商品名称',
             'item_id': '商品ID',
@@ -280,7 +280,7 @@ class AbstractCrawlerLog(BaseDag):
             'tol_origin_order_number': '累计订单总数',
             'tol_return_rate': '总退货率'
         }, inplace=True)
-        data['df']['accum_other1_rank_items'].rename(columns={
+        data_dict['df']['accum_other1_rank_items'].rename(columns={
             'row_num': '排名',
             'item_title': '商品名称',
             'item_id': '商品ID',
@@ -289,7 +289,7 @@ class AbstractCrawlerLog(BaseDag):
             'tol_origin_order_number': '累计订单总数',
             'tol_return_rate': '总退货率'
         }, inplace=True)
-        data['df']['accum_other2_rank_items'].rename(columns={
+        data_dict['df']['accum_other2_rank_items'].rename(columns={
             'row_num': '排名',
             'item_title': '商品名称',
             'item_id': '商品ID',
@@ -298,7 +298,7 @@ class AbstractCrawlerLog(BaseDag):
             'tol_origin_order_number': '累计订单总数',
             'tol_return_rate': '总退货率'
         }, inplace=True)
-        data['df']['yes_le_rank_items'].rename(columns={
+        data_dict['df']['yes_le_rank_items'].rename(columns={
             'row_num': '排名',
             'item_title': '商品名称',
             'item_id': '商品ID',
@@ -306,7 +306,7 @@ class AbstractCrawlerLog(BaseDag):
             'return_rate': '昨日退货率',
             'account': '账号'
         }, inplace=True)
-        data['df']['yes_other1_rank_items'].rename(columns={
+        data_dict['df']['yes_other1_rank_items'].rename(columns={
             'row_num': '排名',
             'item_title': '商品名称',
             'item_id': '商品ID',
@@ -314,7 +314,7 @@ class AbstractCrawlerLog(BaseDag):
             'return_rate': '昨日退货率',
             'account': '账号'
         }, inplace=True)
-        data['df']['yes_other2_rank_items'].rename(columns={
+        data_dict['df']['yes_other2_rank_items'].rename(columns={
             'row_num': '排名',
             'item_title': '商品名称',
             'item_id': '商品ID',
@@ -332,7 +332,7 @@ class AbstractCrawlerLog(BaseDag):
             "final_order_number": "结算订单数量",
             "tol_income": "预估收入",
         }, inplace=True)
-        workbook_name = f"切片卖货数据_{data['date_interval']['month_start_time']}_{data['date_interval']['yes_time']}_{data['date_interval']['now_time']}"
+        workbook_name = f"切片卖货数据_{data_dict['date_interval']['month_start_time']}_{data_dict['date_interval']['yes_time']}_{data_dict['date_interval']['now_time']}"
         workbook_url, spreadsheet_token = self.feishu_sheet_supply.get_workbook_params(
             workbook_name=workbook_name, folder_token='Fn9ZfxSxylvMSsdwzGwcZPEGn9j')
         slice_sheet_token = self.feishu_sheet_supply.get_sheet_params(spreadsheet_token, '切片卖货数据')
@@ -346,25 +346,25 @@ class AbstractCrawlerLog(BaseDag):
         yes_le_rank_sheet_token = self.feishu_sheet_supply.get_sheet_params(spreadsheet_token, '乐总昨日商品排名')
         total_sheet_token = self.feishu_sheet_supply.get_sheet_params(spreadsheet_token, '月汇总数据')
         self.feishu_sheet.write_df_replace(belong_sum_df, spreadsheet_token, slice_sheet_token, to_char=False)
-        self.feishu_sheet.write_df_replace(data['df']['accum_other2_rank_items'], spreadsheet_token,
+        self.feishu_sheet.write_df_replace(data_dict['df']['accum_other2_rank_items'], spreadsheet_token,
                                            other2_rank_sheet_token, to_char=False)
-        self.feishu_sheet.write_df_replace(data['df']['accum_other1_rank_items'], spreadsheet_token,
+        self.feishu_sheet.write_df_replace(data_dict['df']['accum_other1_rank_items'], spreadsheet_token,
                                            other1_rank_sheet_token, to_char=False)
-        self.feishu_sheet.write_df_replace(data['df']['accum_le_rank_items'], spreadsheet_token,
+        self.feishu_sheet.write_df_replace(data_dict['df']['accum_le_rank_items'], spreadsheet_token,
                                            le_rank_sheet_token, to_char=False)
-        self.feishu_sheet.write_df_replace(data['df']['yes_other2_rank_items'], spreadsheet_token,
+        self.feishu_sheet.write_df_replace(data_dict['df']['yes_other2_rank_items'], spreadsheet_token,
                                            yes_other2_rank_sheet_token, to_char=False)
-        self.feishu_sheet.write_df_replace(data['df']['yes_other1_rank_items'], spreadsheet_token,
+        self.feishu_sheet.write_df_replace(data_dict['df']['yes_other1_rank_items'], spreadsheet_token,
                                            yes_other1_rank_sheet_token, to_char=False)
-        self.feishu_sheet.write_df_replace(data['df']['yes_le_rank_items'], spreadsheet_token,
+        self.feishu_sheet.write_df_replace(data_dict['df']['yes_le_rank_items'], spreadsheet_token,
                                            yes_le_rank_sheet_token, to_char=False)
-        self.feishu_sheet.write_df_replace(data['df']['df_total'], spreadsheet_token, total_sheet_token, to_char=False)
+        self.feishu_sheet.write_df_replace(data_dict['df']['df_total'], spreadsheet_token, total_sheet_token, to_char=False)
         return {
             'sheet_params': {
                 'sheet_title': workbook_name,
                 'url': workbook_url
             },
-            'date_interval': data['date_interval']
+            'date_interval': data_dict['date_interval']
         }
 
     def send_card_logic(self, card: Dict[str, Any], sheet):
@@ -375,4 +375,4 @@ class AbstractCrawlerLog(BaseDag):
         self.feishu_robot.send_msg_card(data=res, card_id=self.card_id, version_name='1.0.3')
 
 
-crawler_log_dag = AbstractCrawlerLog().create_dag()
+dag = LiveSlice().create_dag()
