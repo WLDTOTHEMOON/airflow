@@ -24,6 +24,8 @@ class AbstractLeDelivery(AbstractDagTask):
         self.card_id: str = 'AAqRLrhJaJ8IV'
 
     def fetch_data(self, **kwargs) -> Dict:
+        start_time = kwargs['data_interval_end'].in_tz('Asia/Shanghai')
+        end_time = start_time.subtract(days=1).strftime('%Y-%m-%d')
         sql = f"""
             SELECT
                     order_date
@@ -49,11 +51,11 @@ class AbstractLeDelivery(AbstractDagTask):
                     and COALESCE(round(send_order_number/final_order_number,4),0)!=1
                     and origin_order_number >= 50
                     and final_order_number > 0
-                    and order_date < date_sub(current_date, interval 1 day)
+                    and order_date < %(end_time)s
                 ORDER BY
                     wait_send_order_number DESC
         """
-        le_delivery_df = pd.read_sql(sql, self.engine)
+        le_delivery_df = pd.read_sql(sql, self.engine, params={'end_time': end_time})
 
         return {
             'le_delivery_df': le_delivery_df

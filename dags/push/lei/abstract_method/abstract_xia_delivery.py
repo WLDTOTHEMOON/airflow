@@ -50,7 +50,6 @@ class AbstractXiaDelivery(AbstractDagTask):
                     and COALESCE(round(send_order_number/final_order_number,4),0)!=1
                     and origin_order_number >= 50
                     and final_order_number > 0
-                    and order_date < date_sub(current_date, interval 1 day)
                 ORDER BY
                     wait_send_order_number DESC
         """

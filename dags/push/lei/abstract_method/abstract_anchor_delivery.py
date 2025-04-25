@@ -25,6 +25,8 @@ class AbstractAnchorDelivery(AbstractDagTask):
         self.card_id: str = 'AAqRbcLWUH0l4'
 
     def fetch_data(self, **kwargs) -> Dict:
+        start_time = kwargs['data_interval_end'].in_tz('Asia/Shanghai')
+        begin_time = start_time.subtract(days=21).strftime('%Y-%m-%d')
         anchor_delivery_sql = f"""
             select 
                 order_date
@@ -42,7 +44,7 @@ class AbstractAnchorDelivery(AbstractDagTask):
                 ,origin_order_number - final_order_number lose_order
                 ,round(final_order_number/origin_order_number,4) refund_rate
             from dws.dws_ks_big_tbl dkeh 
-            where order_date > date(date_sub(now(), interval 21 day)) and anchor_name != '乐总'
+            where order_date > %(begin_time)s and anchor_name != '乐总'
                 and origin_order_number > 50 
                 and round(case when final_order_number = 0 then 0 else send_order_number/final_order_number end , 4) < 0.95 
                 and (final_order_number - send_order_number) >0
@@ -50,7 +52,7 @@ class AbstractAnchorDelivery(AbstractDagTask):
                 anchor_name desc , 
                 order_date desc
         """
-        anchor_delivery_df = pd.read_sql(anchor_delivery_sql, self.engine)
+        anchor_delivery_df = pd.read_sql(anchor_delivery_sql, self.engine, params={'begin_time': begin_time})
 
         group_data_sql = """
             select
@@ -74,7 +76,7 @@ class AbstractAnchorDelivery(AbstractDagTask):
                         ,origin_order_number - final_order_number lose_order
                         ,round(final_order_number/origin_order_number,4) refund_rate
                 from dws.dws_ks_big_tbl dkeh
-                where order_date > date(date_sub(now(), interval 21 day)) and anchor_name != '乐总'
+                where order_date > %(begin_time)s and anchor_name != '乐总'
                 )src
             where src.origin_order_number > 50 and src.send_rate < 0.95 and (src.final_order_number - send_order_number) > 0
             group by 
@@ -82,7 +84,7 @@ class AbstractAnchorDelivery(AbstractDagTask):
             order by 
                 rate_range1 desc
         """
-        group_df = pd.read_sql(group_data_sql, self.engine)
+        group_df = pd.read_sql(group_data_sql, self.engine, params={'begin_time': begin_time})
 
         return {
             'anchor_delivery_df': anchor_delivery_df,
