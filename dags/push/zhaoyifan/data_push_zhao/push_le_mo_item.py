@@ -158,7 +158,7 @@ class LeMoItem(BaseDag):
             **sheet,
             'description': '数据请见下方链接附件'
         }
-        self.feishu_robot.send_msg_card(data=res, card_id=self.card_id, version_name='1.0.0')
+        self.feishu_robot.send_msg_card(data=res, card_id=self.card_id, version_name='1.0.1')
 
 
 dag = LeMoItem().create_dag()
