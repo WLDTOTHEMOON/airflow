@@ -14,7 +14,7 @@ class LeMoItem(BaseDag):
             default_args={'owner': 'zhaoyifan'},
             tags=['push', 'item'],
             robot_url=Variable.get('TEST'),
-            schedule='0 5 * * *'
+            schedule='0 7 * * *'
         )
         self.card_id = 'AAq4uuRPgclE1'
 
