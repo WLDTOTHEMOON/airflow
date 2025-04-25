@@ -12,10 +12,10 @@ class GmvDag(BaseDag):
             dag_id='gmv',
             default_args={'owner': 'zhaoyifan'},
             robot_url='SELFTEST',
-            card_id='AAqRW5F1mUPZD',
             tags=['example'],
             schedule=None
         )
+        self.card_id = 'AAqRW5F1mUPZD',
 
     def fetch_data_logic(self, date_interval: dict):
         sql = f'''
@@ -27,7 +27,7 @@ class GmvDag(BaseDag):
                     from dws.dws_ks_ec_2hourly dkeh 
                     where order_date = '{date_interval['yes_ds']}'
                 '''
-        yes_df = pd.read_sql(sql, self.conn)
+        yes_df = pd.read_sql(sql, self.engine)
         return {
             'data': yes_df,
             'date_interval': date_interval

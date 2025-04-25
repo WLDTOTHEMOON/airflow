@@ -7,9 +7,7 @@ import lark_oapi as lark
 from include.feishu.feishu_robot import FeishuRobot
 
 
-class FeishuSheetManager:
-    """封装飞书表格操作"""
-
+class FeishuSheetManager():
     def __init__(self):
         config = Variable.get('feishu', deserialize_json=True)
         self.app_id = config.get('app_id')

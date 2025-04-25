@@ -26,7 +26,6 @@ def test_dag():
         }
         return date_interval
 
-
     @task
     def fetch_data(date_interval: dict):
         from include.database.mysql import engine

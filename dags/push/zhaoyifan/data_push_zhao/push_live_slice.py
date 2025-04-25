@@ -15,10 +15,10 @@ class AbstractCrawlerLog(BaseDag):
             dag_id='push_live_slice',
             default_args={'owner': 'zhaoyifan'},
             robot_url='SELFTEST',
-            card_id='AAqRWKhJEyCYM',
             tags=['push', 'live_slice'],
             schedule=None
         )
+        self. card_id = 'AAqRWKhJEyCYM',
 
     def fetch_data_logic(self, date_interval: Dict[str, Any]) -> Dict[str, Any]:
         all_sql = f"""
@@ -146,7 +146,7 @@ class AbstractCrawlerLog(BaseDag):
             ) tmp
         """
 
-        all_df = pd.read_sql(all_sql, self.conn)
+        all_df = pd.read_sql(all_sql, self.engine)
         # 日切片整体业绩
         yes_tol_df = all_df[all_df.order_date.astype(str) >= date_interval['yes_ds']]
         yes_tol_df = pd.DataFrame(
@@ -172,7 +172,7 @@ class AbstractCrawlerLog(BaseDag):
         df_total = pd.concat([each_tol_df, pd.DataFrame([total_row])], ignore_index=True)
 
         # 商品数据
-        accum_rank_items = pd.read_sql(month_item_ranks, self.conn)
+        accum_rank_items = pd.read_sql(month_item_ranks, self.engine)
         accum_le_rank_items = accum_rank_items[accum_rank_items.slice_belong == '乐总']
         accum_le_rank_items = accum_le_rank_items[[
             'row_num', 'item_id', 'item_title', 'current_origin_order_number', 'current_return_rate',
@@ -189,7 +189,7 @@ class AbstractCrawlerLog(BaseDag):
             'tol_origin_order_number', 'tol_return_rate'
         ]]
 
-        yes_rank_items = pd.read_sql(yes_item_ranks, self.conn)
+        yes_rank_items = pd.read_sql(yes_item_ranks, self.engine)
         yes_le_rank_items = yes_rank_items[yes_rank_items.slice_belong == '乐总']
         yes_le_rank_items = yes_le_rank_items[[
             'row_num', 'item_id', 'item_title', 'origin_order_number', 'return_rate', 'account'
