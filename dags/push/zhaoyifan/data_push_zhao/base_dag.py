@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from airflow.decorators import dag, task
 from airflow.models import Variable
 import pendulum
+from datetime import  datetime
 import logging
 from typing import Dict, Any
 from include.database.mysql import engine
@@ -33,21 +34,6 @@ class BaseDag(ABC):
         self.feishu_sheet = feishu_sheet or FeishuSheet(**Variable.get('feishu', deserialize_json=True))
         self.feishu_robot = feishu_robot or FeishuRobot(robot_url)
         self.engine = db_engine or engine
-
-    @staticmethod
-    def percent_convert(num):
-        return str(round(num * 100, 2)) + '%'
-
-    @staticmethod
-    def amount_convert(amount):
-        if amount is not None:
-            if amount >= 10000:
-                result = f"{amount / 10000:.1f}万"
-            else:
-                result = f"{amount:.1f}元"
-            return result
-        else:
-            return None
 
     @abstractmethod
     def fetch_data_logic(self, date_interval: Dict[str, Any]) -> Dict[str, Any]:
@@ -83,12 +69,12 @@ class BaseDag(ABC):
             @task
             def get_date_params(**context) -> Dict[str, Any]:
                 """Time parameter acquisition (fixed logic)"""
-                logical_datetime = context['logical_date'].in_timezone('Asia/Shanghai')
+                logical_datetime = context['data_interval_end'].in_tz('Asia/Shanghai')
                 yes_date = logical_datetime.subtract(days=1).format('YYYY-MM-DD')
                 month_date_start = logical_datetime.subtract(days=1).start_of('month').format('YYYY-MM-DD')
                 yes_timestamp = logical_datetime.subtract(days=1).format('YYYYMMDD')
                 month_start_timestamp = logical_datetime.subtract(days=1).start_of('month').format('YYYYMMDD')
-                now_timestamp = logical_datetime.format('YYYYMMDDHHMM')
+                now_timestamp = logical_datetime.format('YYYYMMDDHHmm')
                 month = logical_datetime.subtract(days=1).start_of('month').format('YYYY-MM')
                 return {
                     "logical": logical_datetime,

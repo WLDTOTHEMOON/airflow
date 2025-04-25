@@ -14,11 +14,11 @@ class AbstractCrawlerLog(BaseDag):
         super().__init__(
             dag_id='push_live_slice',
             default_args={'owner': 'zhaoyifan'},
-            robot_url=Variable.get('TEST'),
+            robot_url=Variable.get('SELFTEST'),
             tags=['push', 'live_slice'],
-            schedule='0 5 * * *'
+            schedule=None
         )
-        self. card_id = 'AAqRWKhJEyCYM',
+        self.card_id = 'AAqRWKhJEyCYM'
 
     def fetch_data_logic(self, date_interval: Dict[str, Any]) -> Dict[str, Any]:
         all_sql = f"""

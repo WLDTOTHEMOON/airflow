@@ -11,10 +11,10 @@ class BasePerformanceDaily(BaseDag):
     def __init__(self):
         super().__init__(
             dag_id='push_performance_daily',
-            default_args={'owner': 'zhaoyifan',},
+            default_args={'owner': 'zhaoyifan'},
             tags=['push', 'performance_daily'],
-            robot_url=Variable.get('TEST'),
-            schedule='0 5 * * *'
+            robot_url=Variable.get('SELFTEST'),
+            schedule=None
         )
         self.card_id = ['AAq4Y3orMfVcg', 'AAq4Y35W9y9hv']
 
