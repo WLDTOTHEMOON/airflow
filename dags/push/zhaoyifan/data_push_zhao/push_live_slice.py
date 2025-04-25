@@ -16,7 +16,7 @@ class AbstractCrawlerLog(BaseDag):
             default_args={'owner': 'zhaoyifan'},
             robot_url='SELFTEST',
             tags=['push', 'live_slice'],
-            schedule=None
+            schedule='0 5 * * *'
         )
         self. card_id = 'AAqRWKhJEyCYM',
 
