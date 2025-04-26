@@ -433,7 +433,7 @@ class WyPerformance(BaseDag):
             **card,
             **sheet['sheet_params']
         }
-        self.feishu_robot.send_msg_card(data=res, card_id=self.card_id, version_name='1.0.2')
+        self.feishu_robot.send_msg_card(data=res, card_id=self.card_id, version_name='1.0.3')
 
 
 dag = WyPerformance().create_dag()

@@ -470,7 +470,7 @@ class PerformanceDaily(BaseDag):
         res_1 = {**card['card_1']}
         res_2 = {**card['card_2']}
         self.feishu_robot.send_msg_card(data=res_1, card_id=self.card_id[0], version_name='1.0.0')
-        self.feishu_robot.send_msg_card(data=res_2, card_id=self.card_id[1], version_name='1.0.2')
+        self.feishu_robot.send_msg_card(data=res_2, card_id=self.card_id[1], version_name='1.0.3')
 
 
 dag = PerformanceDaily().create_dag()
