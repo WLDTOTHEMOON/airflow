@@ -15,9 +15,9 @@ class WyPerformance(BaseDag):
         super().__init__(
             dag_id='push_wy_performance',
             default_args={'owner': 'zhaoyifan'},
-            robot_url=Variable.get('SELFTEST'),
+            robot_url=Variable.get('TEST'),
             tags=['push', 'wy_performance'],
-            schedule=None
+            schedule='0 5 * * *'
         )
         self.card_id = 'AAq4u363eDy7O'
 
