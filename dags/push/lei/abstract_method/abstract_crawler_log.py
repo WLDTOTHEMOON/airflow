@@ -39,21 +39,21 @@ class AbstractCrawlerLog(AbstractDagTask):
                     'ods' schema_name
                     ,'ods_leader_commission_income' table_name
                     ,count(*) number_yesterday
-                from ods.ods_leader_commission_income olci 
+                from ods.ods_crawler_leader_commission_income olci 
                 where date(order_create_time) >= %(last_date)s
                 union
                 select
                     'ods' schema_name
                     ,'ods_cps_order_recreation' table_name
                     ,count(*) number_yesterday
-                from ods.ods_cps_order_recreation ocor 
+                from ods.ods_crawler_recreation ocor 
                 where date(order_create_time) >= %(last_date)s
                 union
                 select
                     'tmp' schema_name
                     ,'tmp_mcn_order' table_name
                     ,count(*) number_yesterday
-                from tmp.tmp_mcn_order tmo 
+                from ods.ods_crawler_mcn_order tmo 
                 where date(order_create_time) >= %(last_date)s
             '''
 

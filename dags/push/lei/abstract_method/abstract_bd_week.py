@@ -40,7 +40,7 @@ class AbstractBdWeek(AbstractDagTask):
                     ,sum(final_gmv) final_gmv 
                     ,sum(estimated_income + coalesce(estimated_service_income,0)) estimated_income 
                     ,sum(estimated_income + coalesce(estimated_service_income,0))/sum(final_gmv) rate
-                from dws.dws_ks_ec_2hourly dkeh
+                from dws.dws_ks_big_tbl dkeh
                 where order_date between %(begin_time)s and %(end_time)s
                     and bd_name is not null
                 group by
@@ -53,7 +53,7 @@ class AbstractBdWeek(AbstractDagTask):
                     ,sum(final_gmv) final_gmv 
                     ,sum(estimated_income + coalesce(estimated_service_income,0)) estimated_income 
                     ,sum(estimated_income + coalesce(estimated_service_income,0))/sum(final_gmv) rate
-                from dws.dws_ks_ec_2hourly dkeh
+                from dws.dws_ks_big_tbl dkeh
                 where product_id is not null 
                     and bd_name is null
                     and order_date between %(begin_time)s and %(end_time)s
@@ -64,7 +64,7 @@ class AbstractBdWeek(AbstractDagTask):
                     ,sum(final_gmv) final_gmv 
                     ,sum(estimated_income + coalesce(estimated_service_income,0)) estimated_income 
                     ,sum(estimated_income + coalesce(estimated_service_income,0))/sum(final_gmv) rate
-                from dws.dws_ks_ec_2hourly dkeh
+                from dws.dws_ks_big_tbl dkeh
                 where product_id is null
                     and order_date between %(begin_time)s and %(end_time)s)
             select
@@ -258,7 +258,7 @@ class AbstractBdWeek(AbstractDagTask):
                     left join(
                         select 
                             *
-                        from ods.ods_item_category_path
+                        from ods.ods_item_category
                     ) it ON src.item_category COLLATE utf8mb4_general_ci = it.category_id COLLATE utf8mb4_general_ci
                     where status in ('入库')
                         and bd_name not in ('张小卓','张澜','方涌超','赵乙都')
@@ -308,7 +308,7 @@ class AbstractBdWeek(AbstractDagTask):
                                 bd_name
                                 ,anchor_name
                                 ,product_id
-                        from dws.dws_ks_ec_2hourly dkeh
+                        from dws.dws_ks_big_tbl dkeh
                         where order_date between %(begin_time)s and %(end_time)s
                                 and bd_name is not null
                                 and origin_gmv > 200
@@ -336,7 +336,7 @@ class AbstractBdWeek(AbstractDagTask):
                         ,sum(final_gmv)/sum(origin_gmv) final_rate
                         ,sum(estimated_income + coalesce(estimated_service_income,0)) estimated_income 
                         ,case when sum(final_gmv) = 0 then 0 else sum(estimated_income + coalesce(estimated_service_income,0))/sum(final_gmv) end estimated_rate
-                    from dws.dws_ks_ec_2hourly dkeh 
+                    from dws.dws_ks_big_tbl dkeh 
                     where order_date between %(begin_time)s and %(end_time)s
                     group by
                         item_id

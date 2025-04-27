@@ -42,7 +42,7 @@ class AbstractItemCommission(AbstractDagTask):
                 ,coalesce(commission_rate,0) anchor_commission
                 ,by_anchor
                 ,status
-            from dws.dws_ks_ec_2hourly dkeh 
+            from dws.dws_ks_big_tbl dkeh 
             left join(
                 select
                     by_anchor
@@ -89,7 +89,7 @@ class AbstractItemCommission(AbstractDagTask):
             and dkeh.account_id not in (
                 select
                     account_id 
-                from dim.dim_ks_anchor_info dkai 
+                from dim.dim_ks_account_info dkai 
                 where anchor_status = '已解约'
                 )
             having

@@ -52,7 +52,7 @@ class AbstractSupplementFlow(AbstractDagTask):
                         and account_id not in (
                             select
                                 account_id
-                            from dim.dim_ks_anchor_info dai
+                            from dim.dim_ks_account_info dai
                             where group_leader = '刘海州'
                             )
                     )src
@@ -69,7 +69,7 @@ class AbstractSupplementFlow(AbstractDagTask):
                     and account_id not in (
                         select
                             account_id 
-                        from dim.dim_ks_anchor_info dai
+                        from dim.dim_ks_account_info dai
                         where group_leader = '刘海州'
                         )
                 group by

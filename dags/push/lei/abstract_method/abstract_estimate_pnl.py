@@ -166,7 +166,7 @@ class AbstractEstimatePnl(AbstractDagTask):
                             anchor_name
                             ,coalesce(organization_commission_rate,1) organization_commission_rate
                         from
-                            dim.dim_ks_anchor_info dkai
+                            dim.dim_ks_account_info dkai
                         where anchor_name is not null
                         group by 
                             anchor_name

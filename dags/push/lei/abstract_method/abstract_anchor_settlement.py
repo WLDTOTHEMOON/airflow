@@ -42,7 +42,7 @@ class AbstractAnchorSettlement(AbstractDagTask):
                 select
                     account_id
                     ,anchor_name
-                from dim.dim_ks_anchor_info dkai 
+                from dim.dim_ks_account_info dkai 
                 where line in ('直播电商','其它')
             ) ai on dkco.account_id = ai.account_id
             where settlement_success_time between %(begin_time)s and %(end_time)s
@@ -72,7 +72,7 @@ class AbstractAnchorSettlement(AbstractDagTask):
                      anchor_id
                      ,start_time
                      ,end_time
-                 from ods.ods_slice_account
+                 from ods.ods_fs_slice_account
                  where anchor_id not in ('173119688') -- 这个账号只是作为二创作者存在的
              )A
              inner join ( 
@@ -105,7 +105,7 @@ class AbstractAnchorSettlement(AbstractDagTask):
                      anchor_id
                      ,start_time
                      ,end_time
-                 from ods.ods_slice_account
+                 from ods.ods_fs_slice_account
              )A
              inner join (
                  select 
@@ -141,7 +141,7 @@ class AbstractAnchorSettlement(AbstractDagTask):
                 ,0 estimated_income
             from dwd.dwd_ks_leader_order 
             where activity_id in ('5084323902','5142199902','4920930902','6701551902','6244252902', '7469588902')
-                and promotion_id not in (select anchor_id from ods.ods_slice_account)
+                and promotion_id not in (select anchor_id from ods.ods_fs_slice_account)
                 and settlement_success_time between %(begin_time)s and %(end_time)s
                 and cps_order_status = '已结算'
             group by 
@@ -177,7 +177,7 @@ class AbstractAnchorSettlement(AbstractDagTask):
                 ,0 estimated_income
             from dwd.dwd_ks_leader_order 
             where activity_id = '5084317902'
-                and promotion_id not in (select anchor_id from ods.ods_slice_account)
+                and promotion_id not in (select anchor_id from ods.ods_fs_slice_account)
                 and settlement_success_time between %(begin_time)s and %(end_time)s
                 and cps_order_status = '已结算'
             group by 
@@ -204,7 +204,7 @@ class AbstractAnchorSettlement(AbstractDagTask):
              left join (
                  select 
                      anchor_id
-                 from ods.ods_slice_account
+                 from ods.ods_fs_slice_account
              )A on com.author_id = A.anchor_id  
              where A.anchor_id is null
             group by 

@@ -73,7 +73,7 @@ class AbstractMoReturn(AbstractDagTask):
                         select
                             distinct
                             anchor_name
-                        from dim.dim_ks_anchor_info dai
+                        from dim.dim_ks_account_info dai
                         where other_commission_belong = '墨晨夏'
                     )
                     and anchor_name != '墨晨夏'
@@ -108,7 +108,7 @@ class AbstractMoReturn(AbstractDagTask):
                         select
                             distinct
                             anchor_name
-                        from dim.dim_ks_anchor_info dkai
+                        from dim.dim_ks_account_info dkai
                         where other_commission_belong = '墨晨夏' or anchor_name = '墨晨夏'
                     )
                 group by anchor_name
