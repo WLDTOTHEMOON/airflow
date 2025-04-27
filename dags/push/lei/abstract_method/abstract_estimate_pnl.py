@@ -41,7 +41,6 @@ class AbstractEstimatePnl(AbstractDagTask):
                 ,organization_commission_rate organization_commission_rate
                 ,predict_income_belong_org cps_organization_predict_income
                 ,final_commission*coalesce(commission_belong_organization_rate,0) pk_organization_income
-    --             ,estimated_income*COALESCE(organization_commission_rate,0)+final_commission*COALESCE(commission_belong_organization_rate,0) all_organization_income
                 ,predict_income_belong_org + (final_commission*coalesce(commission_belong_organization_rate,0)) predict_income_belong_org
             from
             (
@@ -55,7 +54,7 @@ class AbstractEstimatePnl(AbstractDagTask):
                     ,sum(predict_income_belong_org) predict_income_belong_org
                     ,commission_belong_organization_rate
                 from
-                    (	
+                    (
                     select 
                         order_date
                         ,anchor_name
@@ -66,21 +65,7 @@ class AbstractEstimatePnl(AbstractDagTask):
                         ,0 final_commission
                         ,null commission_belong_organization_rate
                     from
-                        ads.ads_estimated_pnl aep 
-                    union all
-                    select 
-                        live_date order_date
-                        ,anchor_name
-                        ,0 valid_estimated_income
-                        ,0 profit_rate
-                        ,0 predict_income
-                        ,0 predict_income_belong_org
-                        ,final_commission
-                        ,commission_belong_organization_rate
-                    from
-                        dwd.dwd_order_pk_summary
-                    where
-                        live_date between %(begin_time)s and %(end_time)s
+                        ads.ads_ks_estimated_pnl aep
                     )aa
                 group by
                     order_date
@@ -93,7 +78,7 @@ class AbstractEstimatePnl(AbstractDagTask):
                         anchor_name
                         ,coalesce(organization_commission_rate,1) organization_commission_rate
                     from
-                        dim.dim_ks_anchor_info
+                        dim.dim_ks_account_info
                     where anchor_name is not null
                     group by 
                         anchor_name
@@ -141,19 +126,7 @@ class AbstractEstimatePnl(AbstractDagTask):
                             ,0 final_commission
                             ,null commission_belong_organization_rate
                         from
-                            ads.ads_estimated_pnl aep 
-                        union all
-                        select 
-                            live_date order_date
-                            ,anchor_name
-                            ,0 predict_income
-                            ,0 predict_income_belong_org
-                            ,final_commission
-                            ,commission_belong_organization_rate
-                        from
-                            dwd.dwd_order_pk_summary
-                        where
-                            live_date between %(begin_time)s and %(end_time)s
+                            ads.ads_ks_estimated_pnl aep 
                         )aa
                     group by
                         order_date
