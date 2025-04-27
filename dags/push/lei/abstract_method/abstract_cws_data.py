@@ -74,7 +74,7 @@ class AbstractCwsData(AbstractDagTask):
                         account_id
                         ,anchor_name
                         ,line
-                    from dim.dim_ks_anchor_info dkai
+                    from dim.dim_ks_account_info dkai
                 ) ai on dkco.account_id = ai.account_id
                 where date(order_create_time - interval 4 hour) between %(begin_time)s and %(end_time)s
                     and o_id not in ( select o_id from dwd.dwd_ks_recreation )
@@ -112,7 +112,7 @@ class AbstractCwsData(AbstractDagTask):
                     select
                         account_id,
                         anchor_name
-                    from dim.dim_ks_anchor_info dkai
+                    from dim.dim_ks_account_info dkai
                     where line in ('其它', '直播电商')
                 ) ai on dkco.account_id = ai.account_id
                 where date(order_create_time - interval 4 hour) between %(begin_time)s and %(end_time)s

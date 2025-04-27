@@ -50,8 +50,8 @@ class AbstractCrawlerLog(AbstractDagTask):
                 where date(order_create_time) >= %(last_date)s
                 union
                 select
-                    'tmp' schema_name
-                    ,'tmp_mcn_order' table_name
+                    'ods' schema_name
+                    ,'ods_crawler_mcn_order' table_name
                     ,count(*) number_yesterday
                 from ods.ods_crawler_mcn_order tmo 
                 where date(order_create_time) >= %(last_date)s
