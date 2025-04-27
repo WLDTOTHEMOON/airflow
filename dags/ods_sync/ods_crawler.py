@@ -235,6 +235,33 @@ def ods_crawler_recreation():
 ods_crawler_recreation()
 
 
+@dag(schedule=Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/ods/ods_crawler_anchor_live_record'),
+     start_date=pendulum.datetime(2023, 1, 1), catchup=False,
+     default_args=default_args, tags=['ods', 'crawler'], max_active_runs=1)
+def ods_crawler_anchor_live_record():
+    @task(outlets=[Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/ods/ods_crawler_anchor_live_record')])
+    def ods_crawler_anchor_live_record():
+        from include.database.mysql import engine
+        from sqlalchemy import text
+        import pandas as pd
+        path = 'live_record/'
+        suffix = '.json'
+        flag = get_flag(path)
+        if flag:
+            logger.info(f'数据更新，开始同步')
+            raw_data = read_data(path=path, suffix=suffix)
+            sql = generate_upsert_template('ods', 'ods_crawler_anchor_live_record')
+            if len(raw_data) > 0:
+                with engine.connect() as conn:
+                    conn.execute(text(sql), raw_data)
+            logger.info(f'完成数据同步 {len(raw_data)} items')
+            update_flag(path=path, flag=0)
+        else:
+            logger.info(f'数据未更新，结束任务')
+    ods_crawler_anchor_live_record()
+ods_crawler_anchor_live_record()
+
+
 @dag(schedule=Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/ods/ods_crawler_recreation'),
      start_date=pendulum.datetime(2023, 1, 1), catchup=False,
      default_args=default_args, tags=['ods', 'crawler'], max_active_runs=1)
