@@ -235,7 +235,7 @@ def ods_crawler_recreation():
 ods_crawler_recreation()
 
 
-@dag(schedule=Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/ods/ods_crawler_anchor_live_record'),
+@dag(schedule=Dataset('mysql://cd-cynosdbmysql-grp-lya2inq0.sql.tencentcdb.com:21775/ods/ods_crawler_recreation'),
      start_date=pendulum.datetime(2023, 1, 1), catchup=False,
      default_args=default_args, tags=['ods', 'crawler'], max_active_runs=1)
 def ods_crawler_anchor_live_record():
