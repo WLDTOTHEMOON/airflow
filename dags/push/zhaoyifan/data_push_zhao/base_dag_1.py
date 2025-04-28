@@ -18,21 +18,22 @@ class BaseParallelDag(ABC):
     def __init__(
             self,
             dag_id: str,
+            schedule: Any,
             default_args: dict,
             tags: list[str],
-            card_id: str,
             robot_url: str,
-            schedule: Any
+            feishu_sheet: FeishuSheet = None,
+            feishu_robot: FeishuRobot = None,
+            db_engine=None
     ):
-        self.conn = engine
-        self.feishu_sheet_supply = FeishuSheetManager()
-        self.feishu_sheet = FeishuSheet(**Variable.get('feishu', deserialize_json=True))
-        self.feishu_robot = FeishuRobot(Variable.get(robot_url))
         self.dag_id = dag_id
+        self.schedule = schedule
         self.default_args = default_args
         self.tags = tags
-        self.card_id = card_id
-        self.schedule = schedule
+        self.feishu_sheet_supply = FeishuSheetManager()
+        self.feishu_sheet = feishu_sheet or FeishuSheet(**Variable.get('feishu', deserialize_json=True))
+        self.feishu_robot = feishu_robot or FeishuRobot(robot_url)
+        self.engine = db_engine or engine
 
     @abstractmethod
     def get_sql_queries(self, date_interval: dict) -> Dict[str, str]:
@@ -45,30 +46,19 @@ class BaseParallelDag(ABC):
     #     raise NotImplementedError
     #
     # @abstractmethod
-    # def prepare_card_logic(self, data: Dict[str, Any], date_interval: dict) -> Dict[str, Any]:
-    #     """准备卡片数据的抽象方法"""
-    #     raise NotImplementedError
-    #
-    # @abstractmethod
-    # def write_to_sheet_logic(self, data: Dict[str, Any], date_interval: dict) -> Dict[str, Any]:
-    #     """写入飞书表格的抽象方法"""
-    #     raise NotImplementedError
-    #
-    # @abstractmethod
-    # def send_card_logic(self, card: Dict[str, Any], sheet):
-    #     """发送通知的抽象方法"""
-    #     raise NotImplementedError
+    def prepare_card_logic(self, data: Dict[str, Any], date_interval: dict) -> Dict[str, Any]:
+        """准备卡片数据的抽象方法"""
+        raise NotImplementedError
 
-    # def get_query_info(self, date_interval) -> List[Dict]:
-    #     """生成动态任务参数"""
-    #     queries = self.get_sql_queries(date_interval)
-    #     return [
-    #         {
-    #             "task_id": task_id,
-    #             "sql": sql,
-    #             "date_interval": queries['date_interval']
-    #         } for task_id, sql in queries['sql'].items()
-    #     ]
+    @abstractmethod
+    def write_to_sheet_logic(self, data: Dict[str, Any], date_interval: dict) -> Dict[str, Any]:
+        """写入飞书表格的抽象方法"""
+        raise NotImplementedError
+
+    @abstractmethod
+    def send_card_logic(self, card: Dict[str, Any], sheet):
+        """发送通知的抽象方法"""
+        raise NotImplementedError
 
     def create_dag(self):
         """构建DAG结构"""
@@ -100,22 +90,20 @@ class BaseParallelDag(ABC):
                     "now_time": now_timestamp
                 }
 
-            @task_group
-            def get_data_df(date_interval):
-                sql_dict = {}
-                sql_group = self.get_sql_queries(date_interval)
-                for task_id, sql in sql_group.items():
-                    @task(task_id=f'fetch_data_task_{task_id}')
-                    def execute_sql(sql):
-                        return pd.read_sql(sql, self.conn)
+            @ property
+            def execute_sql() -> Callable:
+                """返回动态SQL执行任务"""
+                @task
+                def _execute_sql(query_info: Dict[str, str]) -> Dict:
+                    task_id = query_info['task_id']
+                    sql = query_info['sql']
+                    result = pd.read_sql(sql, self.engine)
+                    return {task_id: result}
 
-                    sql_dict[task_id] = execute_sql
-
-            # @task
-            # def execute_sql_queries(date_interval) -> dict[Dict]:
-            #     """动态展开执行所有SQL"""
-
-                # return _execute_sql.expand(query_info=self.get_query_info(date_interval))
+            @task
+            def execute_sql_queries(date_interval) -> dict[Dict]:
+                """动态展开执行所有SQL"""
+                return _execute_sql.expand(query_info=self.get_query_info(date_interval))
 
             # @task
             # def deal_with_data(data, date_interval) -> Dict:
