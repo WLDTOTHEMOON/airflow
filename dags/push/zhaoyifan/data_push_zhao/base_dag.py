@@ -69,21 +69,29 @@ class BaseDag(ABC):
             @task
             def get_date_params(**context) -> Dict[str, Any]:
                 """Time parameter acquisition (fixed logic)"""
-                logical_datetime = context['data_interval_end'].in_tz('Asia/Shanghai')
-                yes_date = logical_datetime.subtract(days=1).format('YYYY-MM-DD')
-                month_date_start = logical_datetime.subtract(days=1).start_of('month').format('YYYY-MM-DD')
-                yes_timestamp = logical_datetime.subtract(days=1).format('YYYYMMDD')
-                month_start_timestamp = logical_datetime.subtract(days=1).start_of('month').format('YYYYMMDD')
-                now_timestamp = logical_datetime.format('YYYYMMDDHHmm')
-                month = logical_datetime.subtract(days=1).start_of('month').format('YYYY-MM')
+                end_datetime = context['data_interval_end'].in_tz('Asia/Shanghai')
+                yes_date = end_datetime.subtract(days=1).format('YYYY-MM-DD')
+                month_date_start = end_datetime.subtract(days=1).start_of('month').format('YYYY-MM-DD')
+                yes_timestamp = end_datetime.subtract(days=1).format('YYYYMMDD')
+                month_start_timestamp = end_datetime.subtract(days=1).start_of('month').format('YYYYMMDD')
+                now_timestamp = end_datetime.format('YYYYMMDDHHmm')
+                month = end_datetime.subtract(days=1).start_of('month').format('YYYY-MM')
+                week_start_date = end_datetime.subtract(days=1).start_of('week').format('YYYY-MM-DD')
+                week_end_date = end_datetime.subtract(days=1).end_of('week').format('YYYY-MM-DD')
+                week_start_time = end_datetime.subtract(days=1).start_of('week').format('YYYYMMDD')
+                week_end_time = end_datetime.subtract(days=1).end_of('week').format('YYYYMMDD')
                 return {
-                    "logical": logical_datetime,
+                    "end_datetime": end_datetime,
                     "yes_ds": yes_date,
                     "month_start_ds": month_date_start,
                     "yes_time": yes_timestamp,
                     "month_start_time": month_start_timestamp,
                     "now_time": now_timestamp,
-                    'month': month
+                    'month': month,
+                    'week_start_date': week_start_date,
+                    'week_end_date': week_end_date,
+                    'week_start_time': week_start_time,
+                    'week_end_time': week_end_time
                 }
 
             @task

@@ -188,7 +188,7 @@ class FeishuSheet(FeishuClient):
             )
             return response
         return lark.JSON.unmarshal(response.raw.content, dict)['data']
-    
+
     def write_df_to_cell(self, spreadsheet_token, sheet_id, dat, start_row, start_col, with_headers, to_char):
         col_num_start = col_convert(start_col)
         col_num_end = col_convert(start_col + dat.shape[1] - 1)
@@ -210,23 +210,27 @@ class FeishuSheet(FeishuClient):
                 tmp_end_row = start_row + 4000 * (j + 1) - 1
                 tmp_col = col_convert(start_col + i)
                 if to_char:
-                    tmp_dat = [[str(each) if not pd.isna(each) else ''] for each in dat[col_name].iloc[tmp_row_min:tmp_row_max].to_list()]
+                    tmp_dat = [[str(each) if not pd.isna(each) else ''] for each in
+                               dat[col_name].iloc[tmp_row_min:tmp_row_max].to_list()]
                 else:
-                    tmp_dat = [[each if not pd.isna(each) else ''] for each in dat[col_name].iloc[tmp_row_min:tmp_row_max].to_list()]
+                    tmp_dat = [[each if not pd.isna(each) else ''] for each in
+                               dat[col_name].iloc[tmp_row_min:tmp_row_max].to_list()]
                 self.write_cells(
                     spreadsheet_token=spreadsheet_token, sheet_id=sheet_id,
                     ranges=f'{tmp_col}{tmp_start_row}:{tmp_col}{tmp_end_row}', values=tmp_dat
                 )
-    
+
     def write_df_replace(self, dat, spreadsheet_token, sheet_id, to_char=False):
         first_col = self.read_cells(spreadsheet_token=spreadsheet_token, sheet_id=sheet_id, ranges='A1:A99999')
         row_num = next(i for i, x in enumerate(first_col['valueRanges'][0]['values']) if x == [None])
 
         if row_num > 0:
             self.add_row_col(spreadsheet_token=spreadsheet_token, sheet_id=sheet_id, major_dim='ROWS', length=1)
-            self.delete_row_col(spreadsheet_token=spreadsheet_token, sheet_id=sheet_id, major_dim='ROWS', start_index=1, end_index=row_num)
+            self.delete_row_col(spreadsheet_token=spreadsheet_token, sheet_id=sheet_id, major_dim='ROWS', start_index=1,
+                                end_index=row_num)
 
-        self.write_df_to_cell(spreadsheet_token=spreadsheet_token, sheet_id=sheet_id, dat=dat, start_row=1, start_col=1, with_headers=True, to_char=to_char)
+        self.write_df_to_cell(spreadsheet_token=spreadsheet_token, sheet_id=sheet_id, dat=dat, start_row=1, start_col=1,
+                              with_headers=True, to_char=to_char)
 
         style_dict = {
             'A1:' + col_convert(dat.shape[1]) + '1': {
@@ -241,7 +245,8 @@ class FeishuSheet(FeishuClient):
     def write_df_append(self, dat, spreadsheet_token, sheet_id, to_char=True):
         first_col = self.read_cells(spreadsheet_token=spreadsheet_token, sheet_id=sheet_id, ranges='A1:A99999')
         row_num = next(i for i, x in enumerate(first_col['valueRanges'][0]['values']) if x == [None])
-        self.write_df_to_cell(dat=dat, spreadsheet_token=spreadsheet_token, sheet_id=sheet_id, start_row=row_num + 1, start_col=1, with_headers=False, to_char=to_char)
+        self.write_df_to_cell(dat=dat, spreadsheet_token=spreadsheet_token, sheet_id=sheet_id, start_row=row_num + 1,
+                              start_col=1, with_headers=False, to_char=to_char)
 
     def fetch_dat(self, spreadsheet_token, sheet_id):
         first_row = self.read_cells(spreadsheet_token=spreadsheet_token, sheet_id=sheet_id, ranges='A1:AZ1')
@@ -259,3 +264,76 @@ class FeishuSheet(FeishuClient):
         dat = self.read_cells(spreadsheet_token=spreadsheet_token, sheet_id=sheet_id, ranges=f'A1:{col_num}{row_num}')
 
         return dat
+
+    def insert_row(self, spreadsheet_token, sheet_id, styles):
+        body = {
+            'dimension': {
+                'sheetId': sheet_id,
+                "majorDimension": "ROWS",
+                "startIndex": styles['startIndex'],
+                "endIndex": styles['endIndex']
+            }
+        }
+        request = BaseRequest.builder().http_method(lark.HttpMethod.POST) \
+            .uri(f'/open-apis/sheets/v2/spreadsheets/{spreadsheet_token}/insert_dimension_range') \
+            .token_types({lark.AccessTokenType.TENANT}) \
+            .body(body) \
+            .build()
+        response = self.client.request(request)
+        if not response.success():
+            lark.logger.error(
+                f'style cells failed, '
+                f'code: {response.code}, '
+                f'msg: {response.msg}, '
+                f'log_id: {response.get_log_id()}'
+            )
+            return response
+        return lark.JSON.unmarshal(response.raw.content, dict)['data']
+
+    def insert_data_fs(self, spreadsheet_token, sheet_id, styles):
+        body = {
+            'valueRange': {
+                'range': sheet_id + '!' + styles['range'],
+                'values': [
+                    [
+                        styles['value']
+                    ]
+                ]
+            }
+        }
+        request = BaseRequest.builder().http_method(lark.HttpMethod.PUT) \
+            .uri(f'/open-apis/sheets/v2/spreadsheets/{spreadsheet_token}/values') \
+            .token_types({lark.AccessTokenType.TENANT}) \
+            .body(body) \
+            .build()
+        response = self.client.request(request)
+        if not response.success():
+            lark.logger.error(
+                f'style cells failed, '
+                f'code: {response.code}, '
+                f'msg: {response.msg}, '
+                f'log_id: {response.get_log_id()}'
+            )
+            return response
+        return lark.JSON.unmarshal(response.raw.content, dict)['data']
+
+    def merge_cell(self, spreadsheet_token, sheet_id, styles):
+        body = {
+            'range': sheet_id + '!' + styles['range'],
+            'mergeType': styles['mergeType']
+        }
+        request = BaseRequest.builder().http_method(lark.HttpMethod.POST) \
+            .uri(f'/open-apis/sheets/v2/spreadsheets/{spreadsheet_token}/merge_cells') \
+            .token_types({lark.AccessTokenType.TENANT}) \
+            .body(body) \
+            .build()
+        response = self.client.request(request)
+        if not response.success():
+            lark.logger.error(
+                f'style cells failed, '
+                f'code: {response.code}, '
+                f'msg: {response.msg}, '
+                f'log_id: {response.get_log_id()}'
+            )
+            return response
+        return lark.JSON.unmarshal(response.raw.content, dict)['data']
