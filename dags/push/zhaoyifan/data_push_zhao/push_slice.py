@@ -14,9 +14,9 @@ class Slice(BaseDag):
         super().__init__(
             dag_id='push_slice',
             default_args={'owner': 'zhaoyifan'},
-            robot_url=Variable.get('SELFTEST'),
+            robot_url=Variable.get('TEST'),
             tags=['push', 'slice'],
-            schedule=None
+            schedule='0 5 * * *'
         )
         self.card_id = 'AAqRWKhJEyCYM'
 
