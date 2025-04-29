@@ -28,7 +28,7 @@ def task_failure_callback(context):
     data = {
         'title': title,
         'file_name': '点击查看日志',
-        'url': log_url,
+        'url': log_url.replace('localhost', Variable.get('webserver_url')),
         'description': description,
         'color': 'red'
     }
