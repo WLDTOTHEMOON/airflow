@@ -119,6 +119,7 @@ class KsClient(Client):
                 params['pcursor'] = response['data']['pcursor']
                 continue
             else:
+                logger.info(response)
                 break
 
         return result
