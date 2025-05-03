@@ -118,6 +118,9 @@ class KsClient(Client):
                 result = result + response['data']['orderView']
                 params['pcursor'] = response['data']['pcursor']
                 continue
+            elif response['code'] == '802000': # 流量限制
+                time.sleep(2)
+                continue 
             else:
                 logger.info(response)
                 break
