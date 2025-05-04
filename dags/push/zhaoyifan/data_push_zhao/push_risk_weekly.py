@@ -19,6 +19,13 @@ class RiskWeekly(BaseDag):
         self.card_id = 'AAq4w6tLjK0Iy'
 
     def fetch_data_logic(self, date_interval: Dict[str, Any]) -> Dict[str, Any]:
+        end_datetime = date_interval['end_datetime']
+        week_start_date = end_datetime.start_of('week').subtract(weeks=1).format('YYYY-MM-DD')
+        week_end_date = end_datetime.end_of('week').subtract(weeks=1).format('YYYY-MM-DD')
+        week_start_time = end_datetime.start_of('week').subtract(weeks=1).format('YYYYMMDD')
+        week_end_time = end_datetime.end_of('week').subtract(weeks=1).format('YYYYMMDD')
+        now_datetime = end_datetime.format('YYYYMMDDHHmm')
+
         # date_interval = {
         #     'week_start_date': '2025-04-14',
         #     'week_end_date': '2025-04-20',
@@ -26,6 +33,7 @@ class RiskWeekly(BaseDag):
         #     'week_end_time': '20250414',
         #     "now_time": date_interval['now_time']
         # }
+
         print('读取数据，请稍后')
         audit_count_sql = f'''
             with tol as(
@@ -83,7 +91,7 @@ class RiskWeekly(BaseDag):
                         ,if(is_white = 0,'非白名单','白名单') is_white
                     from xlsd.products p 
                     where by_anchor = 0
-                        and date(created_at) between '{date_interval['week_start_date']}' and '{date_interval['week_end_date']}'
+                        and date(created_at) between '{week_start_date}' and '{week_end_date}'
                 )pro 
                 left join (
                     select
@@ -236,7 +244,7 @@ class RiskWeekly(BaseDag):
                         ,if(is_white = 0,'非白名单','白名单') is_white
                     from xlsd.products p 
                     where by_anchor = 0
-                        and date(created_at) between '{date_interval['week_start_date']}' and '{date_interval['week_end_date']}'
+                        and date(created_at) between '{week_start_date}' and '{week_end_date}'
                 )pro 
                 left join (
                     select
@@ -380,7 +388,7 @@ class RiskWeekly(BaseDag):
                         ,if(is_white = 0,'非白名单','白名单') is_white
                     from xlsd.products p 
                     where by_anchor = 0
-                        and date(created_at) between '{date_interval['week_start_date']}' and '{date_interval['week_end_date']}'
+                        and date(created_at) between '{week_start_date}' and '{week_end_date}'
                 )pro 
                 left join (
                     select
@@ -550,7 +558,7 @@ class RiskWeekly(BaseDag):
                   ,supplier_id
                 from xlsd.products p  
                 where by_anchor = 0
-                    and date(created_at) between '{date_interval['week_start_date']}' and '{date_interval['week_end_date']}'  	
+                    and date(created_at) between '{week_start_date}' and '{week_end_date}'  	
               )pro1 on re.target_id = pro1.id
               left join (
                 select 
@@ -713,7 +721,7 @@ class RiskWeekly(BaseDag):
                   ,status 
                   ,user_id
                 from xlsd.products p  
-                where date(created_at) between '{date_interval['week_start_date']}' and '{date_interval['week_end_date']}' 
+                where date(created_at) between '{week_start_date}' and '{week_end_date}' 
                     and by_anchor = 1
               )pro1 on re.target_id = pro1.id
               left join (
@@ -840,7 +848,11 @@ class RiskWeekly(BaseDag):
             'bd_advice_df': bd_advice_df,
             'adjust_bd_df': adjust_bd_df,
             'adjust_anchor_df': adjust_anchor_df,
-            'date_interval': date_interval
+            'week_start_date': week_start_date,
+            'week_end_date': week_end_date,
+            'week_start_time': week_start_time,
+            'week_end_time': week_end_time,
+            'now_datetime': now_datetime
         }
 
     def prepare_card_logic(self, data_dict: Dict[str, Any]) -> Dict[str, Any]:
@@ -882,15 +894,17 @@ class RiskWeekly(BaseDag):
 
             print("数据验证通过，进程继续。")
 
-            sheet_title = f"风控部周报数据_{data_dict['date_interval']['week_start_time']}_{data_dict['date_interval']['week_end_time']}_{data_dict['date_interval']['now_time']}"
+            sheet_title = f"风控部周报数据_{data_dict['week_start_time']}_{data_dict['week_end_time']}_{data_dict['now_datetime']}"
             url, spreadsheet_token = self.feishu_sheet_supply.get_workbook_params(
                 workbook_name=sheet_title, folder_token='QidBfm7zOlDGOsdGqnycUbe0nKd'
             )
 
             bd_adv_sheet_id = self.feishu_sheet_supply.get_sheet_params(spreadsheet_token, '入库商品SABC汇总')
             qc_sheet_id = self.feishu_sheet_supply.get_sheet_params(spreadsheet_token, '商务提报&审核数据（质控）')
-            anchor_sheet_id = self.feishu_sheet_supply.get_sheet_params(spreadsheet_token, '驳回品机制调整和意见类型数据（自采）')
-            bd_sheet_id = self.feishu_sheet_supply.get_sheet_params(spreadsheet_token, '驳回品机制调整和意见类型数据（招商）')
+            anchor_sheet_id = self.feishu_sheet_supply.get_sheet_params(spreadsheet_token,
+                                                                        '驳回品机制调整和意见类型数据（自采）')
+            bd_sheet_id = self.feishu_sheet_supply.get_sheet_params(spreadsheet_token,
+                                                                    '驳回品机制调整和意见类型数据（招商）')
             sheet_id = self.feishu_sheet_supply.get_sheet_params(spreadsheet_token, '商务提报&审核数据（风控部）')
             self.feishu_sheet.write_df_replace(bd_advice_df, spreadsheet_token, bd_adv_sheet_id, to_char=False)
             self.feishu_sheet.write_df_replace(qc_audit_df, spreadsheet_token, qc_sheet_id, to_char=False)

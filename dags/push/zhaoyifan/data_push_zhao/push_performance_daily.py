@@ -21,42 +21,66 @@ class PerformanceDaily(BaseDag):
 
     def fetch_data_logic(self, date_interval: Dict[str, Any]) -> Dict[str, Any]:
         ec_month_detail_sql = f'''
-            select
-                dws.order_date
-                ,dws.anchor_name
+            select 
+                bt.order_date
+                ,bt.anchor_name
                 ,origin_gmv
                 ,final_gmv
-                ,predict_income_belong_org tol_income
+                ,coalesce(predict_income_belong_org,0) tol_income
             from (
-            select
-                order_date
-                ,anchor_name
-                ,sum(origin_gmv) origin_gmv
-                ,sum(final_gmv) final_gmv
-            from dws.dws_ks_ec_2hourly dkeh
-            where order_date between '{date_interval['month_start_ds']}' and '{date_interval['yes_ds']}'
-            group by 1,2
-            ) dws
-            left join (
-                select
-                    order_date
-                    ,anchor_name
-                    ,sum(coalesce(predict_income_belong_org,0)) predict_income_belong_org
-                from ads.ads_estimated_pnl aep
+                select 
+                    order_date 
+                    ,anchor_name 
+                    ,sum(origin_gmv) origin_gmv 
+                    ,sum(final_gmv) final_gmv 
+                from dws.dws_ks_big_tbl dkbt 
                 where order_date between '{date_interval['month_start_ds']}' and '{date_interval['yes_ds']}'
                 group by 1,2
-            )ads on dws.anchor_name = ads.anchor_name and dws.order_date = ads.order_date
-            union all
-            select
-                    order_date
-                    ,'切片' anchor_name
+            ) bt 
+            left join (
+                select 
+                    order_date 
+                    ,anchor_name 
+                    ,sum(coalesce(predict_income_belong_org,0)) predict_income_belong_org
+                from ads.ads_ks_estimated_pnl
+                where order_date between '{date_interval['month_start_ds']}' and '{date_interval['yes_ds']}'
+                group by 1,2
+            ) pd on bt.anchor_name = pd.anchor_name and bt.order_date =  pd.order_date
+            union all 
+            select 
+                order_date
+                ,'切片' anchor_name
                 ,sum(origin_gmv) origin_gmv
-                ,sum(final_gmv) final_gmv
-                ,sum(coalesce(estimated_income,0) + coalesce(estimated_service_income,0)) tol_income
-            from dws.dws_ks_slice_daily dksd
-            where order_date between '{date_interval['month_start_ds']}' and '{date_interval['yes_ds']}'
+              ,sum(final_gmv) final_gmv
+              ,sum(tol_income) tol_income
+            from (
+                select 
+                    order_date 
+                    ,origin_gmv
+                  ,final_gmv
+                  ,coalesce(estimated_income,0) + coalesce(estimated_service_income,0) tol_income
+                from dws.dws_ks_slice_slicer dkss 
+                where order_date between '{date_interval['month_start_ds']}' and '{date_interval['yes_ds']}'
+                union all
+                select 
+                    order_date 
+                    ,origin_gmv
+                  ,final_gmv
+                  ,coalesce(estimated_income,0) + coalesce(estimated_service_income,0) tol_income
+                from dws.dws_ks_slice_recreation dksr 
+                where order_date between '{date_interval['month_start_ds']}' and '{date_interval['yes_ds']}'
+                union all
+                select 
+                    order_date 
+                    ,origin_gmv
+                  ,final_gmv
+                  ,coalesce(estimated_income,0) + coalesce(estimated_service_income,0) tol_income
+                from dws.dws_ks_slice_mcn dksm
+                where order_date between '{date_interval['month_start_ds']}' and '{date_interval['yes_ds']}'
+            ) slice
             group by 1,2
         '''
+
         target_sql = f'''
             select
                 sum(target_final * 10000) final_target
@@ -68,77 +92,93 @@ class PerformanceDaily(BaseDag):
         ec_month_df = pd.DataFrame(ec_month_detail_df.sum(numeric_only=True)).T
         ec_month_df['final_rate'] = ec_month_df['final_gmv'] / ec_month_df['origin_gmv']
         target_df = pd.read_sql(target_sql, self.engine)
-        ec_month_df['target_success_rate'] = ec_month_df['final_rate'] / target_df['final_target']
-        ec_yes_df = ec_month_detail_df[ec_month_detail_df.order_date.astype(str) >= date_interval['yes_ds']]
+        ec_month_df['target_success_rate'] = ec_month_df['final_gmv'] / target_df['final_target']
+        ec_yes_df = ec_month_detail_df[ec_month_detail_df.order_date.astype(str) == date_interval['yes_ds']]
         ec_yes_df = pd.DataFrame(ec_yes_df.sum(numeric_only=True)).T
+        ec_yes_df['final_rate'] = ec_yes_df['final_gmv'] / ec_yes_df['origin_gmv']
 
         leader_day_pf_sql = f'''
+            select
+               case
+                   when gmv.anchor_name = '乐总' then '乐总'
+                   when gmv.anchor_name = '墨晨夏' then '墨晨夏'
+                   when other_commission_belong = '墨晨夏' then '墨晨夏团队'
+                   else '其他主播'
+               end project
+               ,sum(origin_gmv) origin_gmv
+               ,sum(final_gmv) final_gmv
+               ,sum(final_gmv) / sum(origin_gmv) final_rate
+               ,sum(coalesce(predict_income_belong_org,0)) commission_income
+           from (
                select
-                   case
-                       when gmv.anchor_name = '乐总' then '乐总'
-                       when gmv.anchor_name = '墨晨夏' then '墨晨夏'
-                       when other_commission_belong = '墨晨夏' then '墨晨夏团队'
-                       else '其他主播'
-                   end project
+                   anchor_name
                    ,sum(origin_gmv) origin_gmv
                    ,sum(final_gmv) final_gmv
-                   ,sum(final_gmv) / sum(origin_gmv) final_rate
-                   ,sum(coalesce(predict_income_belong_org,0)) commission_income
-               from (
-                   select
-                       anchor_name
-                       ,sum(origin_gmv) origin_gmv
-                       ,sum(final_gmv) final_gmv
-                   from dws.dws_ks_ec_2hourly dkeh
-                   where order_date  = '{date_interval['yes_ds']}'
-                   group by
-                       anchor_name
-               )gmv
-               left join (
-                   select
-                       distinct anchor_name
-                       ,other_commission_belong
-                       ,line
-                   from dim.dim_ks_anchor_info dkai
-               )mo on gmv.anchor_name = mo.anchor_name
-               left join (
-                   select
-                       anchor_name
-                       ,predict_income_belong_org
-                   from ads.ads_estimated_pnl aep
-                   where order_date = '{date_interval['yes_ds']}'
-               )ads on gmv.anchor_name = ads.anchor_name
-               group by
-                   case
-                       when gmv.anchor_name = '乐总' then '乐总'
-                       when gmv.anchor_name = '墨晨夏' then '墨晨夏'
-                       when other_commission_belong = '墨晨夏' then '墨晨夏团队'
-                       else '其他主播'
-                   end
-               union all
-               select
-                   '切片' project
-                   ,sum(origin_gmv) origin_gmv
-                   ,sum(final_gmv) final_gmv
-                   ,sum(final_gmv) / sum(origin_gmv) final_rate
-                   ,sum(coalesce(estimated_income,0)) + sum(coalesce(estimated_service_income,0)) commission_income
-               from dws.dws_ks_slice_daily dksd
+               from dws.dws_ks_big_tbl dkbt 
                where order_date  = '{date_interval['yes_ds']}'
-               order by
-                   case project
-                       when '乐总' then 1
-                       when '墨晨夏' then 2
-                       when '墨晨夏团队' then 3
-                       when '其他主播' then 4
-                       when '切片' then 5
-                       else 6
-                 end
+               group by
+                   anchor_name
+           )gmv
+           left join (
+               select
+                   distinct anchor_name
+                   ,other_commission_belong
+                   ,line
+               from dim.dim_ks_account_info dkai
+           )mo on gmv.anchor_name = mo.anchor_name
+           left join (
+               select
+                   anchor_name
+                   ,predict_income_belong_org
+               from ads.ads_estimated_pnl aep
+               where order_date = '{date_interval['yes_ds']}'
+           )ads on gmv.anchor_name = ads.anchor_name
+           group by 1
+           union all
+           select 
+              '切片' project
+              ,sum(origin_gmv) origin_gmv
+              ,sum(final_gmv) final_gmv
+              ,sum(final_gmv) / sum(origin_gmv) final_rate
+              ,sum(tol_income) tol_income
+           from (
+                select 
+                    order_date 
+                    ,origin_gmv
+                    ,final_gmv
+                    ,coalesce(estimated_income,0) + coalesce(estimated_service_income,0) tol_income
+                from dws.dws_ks_slice_slicer dkss 
+                where order_date  = '{date_interval['yes_ds']}'
+                union all
+                select 
+                    order_date 
+                    ,origin_gmv
+                    ,final_gmv
+                    ,coalesce(estimated_income,0) + coalesce(estimated_service_income,0) tol_income
+                from dws.dws_ks_slice_recreation dksr 
+                where order_date  = '{date_interval['yes_ds']}'
+                union all
+                select 
+                    order_date 
+                    ,origin_gmv
+                    ,final_gmv
+                    ,coalesce(estimated_income,0) + coalesce(estimated_service_income,0) tol_income
+                from dws.dws_ks_slice_mcn dksm
+                where order_date  = '{date_interval['yes_ds']}'
+           ) slice
+           group by 1
+           order by
+             case project
+                 when '乐总' then 1
+                 when '墨晨夏' then 2
+                 when '墨晨夏团队' then 3
+                 when '其他主播' then 4
+                 when '切片' then 5
+                 else 6
+             end
           '''
 
         yes_tol_df = pd.read_sql(leader_day_pf_sql, self.engine)
-        yes_tol_df.origin_gmv = yes_tol_df.origin_gmv.apply(amount_convert)
-        yes_tol_df.final_gmv = yes_tol_df.final_gmv.apply(amount_convert)
-        yes_tol_df.commission_income = yes_tol_df.commission_income.apply(amount_convert)
 
         leader_month_target_sql = f'''
             select
@@ -159,7 +199,7 @@ class PerformanceDaily(BaseDag):
                     distinct anchor_name
                     ,other_commission_belong
                     ,line
-                from dim.dim_ks_anchor_info dkai
+                from dim.dim_ks_account_info dkai
                 where line != '切片'
             ) mo
             left join (
@@ -174,7 +214,7 @@ class PerformanceDaily(BaseDag):
                     anchor_name
                     ,sum(origin_gmv) origin_gmv
                     ,sum(final_gmv) final_gmv
-                from dws.dws_ks_ec_2hourly dkeh
+                from dws.dws_ks_big_tbl dkbt
                 where order_date between '{date_interval['month_start_ds']}' and '{date_interval['yes_ds']}'
                 group by
                     anchor_name
@@ -183,36 +223,46 @@ class PerformanceDaily(BaseDag):
                 select
                     anchor_name
                     ,sum(coalesce(predict_income_belong_org,0)) predict_income_belong_org
-                from ads.ads_estimated_pnl aep
+                from ads.ads_ks_estimated_pnl
                 where order_date between '{date_interval['month_start_ds']}' and '{date_interval['yes_ds']}'
                 group by
                     anchor_name
             )ads on gmv.anchor_name = ads.anchor_name
-            group by
-                 case
-                  when mo.anchor_name = '乐总' then '乐总'
-                  when mo.anchor_name = '墨晨夏' then '墨晨夏'
-                  when other_commission_belong = '墨晨夏' then '墨晨夏团队'
-                  else '其他主播'
-                end
+            group by 1
             union all
             select
-                project
-                ,origin_gmv
-                ,final_gmv
-                ,final_gmv / origin_gmv final_rate
-                ,target_final
-                ,final_gmv / target_final target_success_rate
-                ,income
+                '切片' project
+                ,sum(origin_gmv) origin_gmv
+                ,sum(final_gmv) final_gmv
+                ,sum(final_gmv) / sum(origin_gmv) final_rate
+                ,sum(coalesce(target_final,0)) target_final
+                ,sum(final_gmv)  / sum(coalesce(target_final,0)) target_success_rate
+                ,sum(tol_income) income
             from (
-                select
-                  '切片' project
-                  ,sum(origin_gmv) origin_gmv
-                  ,sum(final_gmv) final_gmv
-                  ,sum(coalesce(estimated_income,0) + coalesce(estimated_service_income,0)) income
-              from dws.dws_ks_slice_daily dksd
-              where order_date between '{date_interval['month_start_ds']}' and '{date_interval['yes_ds']}'
-            )gmv,
+                select 
+                    order_date 
+                    ,origin_gmv
+                    ,final_gmv
+                    ,coalesce(estimated_income,0) + coalesce(estimated_service_income,0) tol_income
+                from dws.dws_ks_slice_slicer dkss 
+                where order_date between '{date_interval['month_start_ds']}' and '{date_interval['yes_ds']}'
+                union all
+                select 
+                    order_date 
+                    ,origin_gmv
+                    ,final_gmv
+                    ,coalesce(estimated_income,0) + coalesce(estimated_service_income,0) tol_income
+                from dws.dws_ks_slice_recreation dksr 
+                where order_date between '{date_interval['month_start_ds']}' and '{date_interval['yes_ds']}'
+                union all
+                select 
+                    order_date 
+                    ,origin_gmv
+                    ,final_gmv
+                    ,coalesce(estimated_income,0) + coalesce(estimated_service_income,0) tol_income
+                from dws.dws_ks_slice_mcn dksm
+                where order_date between '{date_interval['month_start_ds']}' and '{date_interval['yes_ds']}'
+            ) slice,
             (
                 select
                     sum(coalesce(target_final,0) * 10000) target_final
@@ -231,9 +281,6 @@ class PerformanceDaily(BaseDag):
         '''
         tol_df = pd.read_sql(leader_month_target_sql, self.engine)
         month_tol_df = tol_df[['project', 'origin_gmv', 'final_gmv', 'final_rate', 'income']]
-        month_tol_df.origin_gmv = month_tol_df.origin_gmv.apply(amount_convert)
-        month_tol_df.final_gmv = month_tol_df.final_gmv.apply(amount_convert)
-        month_tol_df.income = month_tol_df.income.apply(amount_convert)
 
         month_target_tol_df = tol_df[['project', 'final_gmv', 'target_final', 'target_success_rate', 'income']]
 
@@ -320,21 +367,18 @@ class PerformanceDaily(BaseDag):
         monitor_df = pd.read_sql(sql, self.engine)
 
         return {
-            'df': {
-                'ec_month_df': ec_month_df,
-                'target_df': target_df,
-                'ec_yes_df': ec_yes_df,
-                'yes_tol_df': yes_tol_df,
-                'month_tol_df': month_tol_df,
-                'month_target_tol_df': month_target_tol_df,
-                'monitor_df': monitor_df
-            },
+            'ec_month_df': ec_month_df,
+            'target_df': target_df,
+            'ec_yes_df': ec_yes_df,
+            'yes_tol_df': yes_tol_df,
+            'month_tol_df': month_tol_df,
+            'month_target_tol_df': month_target_tol_df,
+            'monitor_df': monitor_df,
             'date_interval': date_interval
         }
 
     def prepare_card_logic(self, data_dict: Dict[str, Any]) -> Dict[str, Any]:
-        ec_month_df = data_dict['df']['ec_month_df']
-        ec_month_df['final_rate'] = ec_month_df['final_gmv'] / ec_month_df['origin_gmv']
+        ec_month_df = data_dict['ec_month_df']
         ec_origin_gmv = ec_month_df.origin_gmv.iloc[0]
         if ec_origin_gmv == 0:
             company_origin_gmv = '\\-'
@@ -344,8 +388,7 @@ class PerformanceDaily(BaseDag):
             company_final_rate = str(
                 '{:.2f}%'.format(ec_month_df.final_rate.iloc[0] * 100))
 
-        target_df = data_dict['df']['target_df']
-        ec_month_df['target_success_rate'] = ec_month_df['final_gmv'] / target_df['final_target']
+        target_df = data_dict['target_df']
         company_target = target_df.final_target.iloc[0]
         if company_target == 0 or pd.isnull(company_target):
             company_target = '\\-'
@@ -355,8 +398,7 @@ class PerformanceDaily(BaseDag):
             company_target_success_rate = str(
                 '{:.2f}%'.format(ec_month_df.target_success_rate.iloc[0] * 100))
 
-        ec_yes_df = data_dict['df']['ec_yes_df']
-        ec_yes_df['final_rate'] = ec_yes_df['final_gmv'] / ec_yes_df['origin_gmv']
+        ec_yes_df = data_dict['ec_yes_df']
         company_yes_origin_gmv = ec_yes_df.origin_gmv.iloc[0]
         if company_yes_origin_gmv == 0:
             company_yes_origin_gmv = '\\-'
@@ -366,66 +408,66 @@ class PerformanceDaily(BaseDag):
             company_yes_final_rate = str(
                 '{:.2f}%'.format(ec_yes_df.final_rate.iloc[0] * 100))
 
-        yes_tol_df = data_dict['df']['yes_tol_df']
+        yes_tol_df = data_dict['yes_tol_df']
         print(yes_tol_df.to_dict)
         leader_yes_data = []
         for i in range(yes_tol_df.shape[0]):
             yes_origin_gmv = yes_tol_df.origin_gmv.iloc[i]
-            if yes_origin_gmv == '0.0元':
+            if yes_origin_gmv == 0:
                 yes_origin_gmv = '\\-'
                 yes_final_rate = '\\-'
                 yes_final_gmv = '\\-'
             else:
-                yes_origin_gmv = str(yes_tol_df.origin_gmv.iloc[i])
+                yes_origin_gmv = str(yes_tol_df.origin_gmv.apply(amount_convert).iloc[i])
                 yes_final_rate = str(
                     '{:.2f}%'.format(yes_tol_df.final_rate.iloc[i] * 100))
-                yes_final_gmv = str(yes_tol_df.final_gmv.iloc[i])
+                yes_final_gmv = str(yes_tol_df.final_gmv.apply(amount_convert).iloc[i])
             leader_yes_data.append({
                 'anchor_leader': str(yes_tol_df.project.iloc[i]),
                 'leader_yes_origin_gmv': str(yes_origin_gmv),
                 'leader_yes_residue_gmv': str(yes_final_gmv),
-                'leader_yes_commission_income': str(yes_tol_df.commission_income.iloc[i]),
+                'leader_yes_commission_income': str(yes_tol_df.commission_income.apply(amount_convert).iloc[i]),
                 'leader_yes_retrun_rate': str(yes_final_rate)
             })
         print(leader_yes_data)
 
-        month_tol_df = data_dict['df']['month_tol_df']
+        month_tol_df = data_dict['month_tol_df']
         leader_month_data = []
         for i in range(month_tol_df.shape[0]):
             month_origin_gmv = month_tol_df.origin_gmv.iloc[i]
-            if month_origin_gmv == '0.0元':
+            if month_origin_gmv == 0:
                 month_origin_gmv = '\\-'
                 month_final_rate = '\\-'
                 month_final_gmv = '\\-'
             else:
-                month_origin_gmv = str(month_tol_df.origin_gmv.iloc[i])
+                month_origin_gmv = str(month_tol_df.origin_gmv.apply(amount_convert).iloc[i])
                 month_final_rate = str(
                     '{:.2f}%'.format(month_tol_df.final_rate.iloc[i] * 100))
-                month_final_gmv = str(month_tol_df.final_gmv.iloc[i])
+                month_final_gmv = str(month_tol_df.final_gmv.apply(amount_convert).iloc[i])
             leader_month_data.append({
                 'anchor_leader': str(month_tol_df.project.iloc[i]),
                 'leader_month_origin_gmv': str(month_origin_gmv),
                 'leader_month_residue_gmv': str(month_final_gmv),
-                'leader_month_commission_income': str(month_tol_df.income.iloc[i]),
+                'leader_month_commission_income': str(month_tol_df.income.apply(amount_convert).iloc[i]),
                 'leader_success_rate': str(month_final_rate)
             })
 
-        month_target_tol_df = data_dict['df']['month_target_tol_df']
-        month_target_tol_df.final_gmv = month_target_tol_df.final_gmv.apply(amount_convert)
-        month_target_tol_df.target_final = month_target_tol_df.target_final.apply(amount_convert)
+        month_target_tol_df = data_dict['month_target_tol_df']
+        print(month_target_tol_df)
+        print(month_target_tol_df.target_final)
         anchor_data = []
         for i in range(month_target_tol_df.shape[0]):
             anchor_target_formatted = month_target_tol_df.target_final.iloc[i]
-            if anchor_target_formatted == '0.0元' or pd.isnull(anchor_target_formatted):
+            if anchor_target_formatted == 0 or pd.isnull(anchor_target_formatted):
                 anchor_target_formatted = '\\-'
                 target_success_formatted = '\\-'
             else:
-                anchor_target_formatted = str(month_target_tol_df.target_final.iloc[i])
+                anchor_target_formatted = str(month_target_tol_df.target_final.apply(amount_convert).iloc[i])
                 target_success_formatted = str(
                     '{:.2f}%'.format(month_target_tol_df.target_success_rate.iloc[i] * 100))
             anchor_data.append({
                 'anchor_leader': str(month_target_tol_df.project.iloc[i]),
-                'leader_month_origin_gmv': str(month_target_tol_df.final_gmv.iloc[i]),
+                'leader_month_origin_gmv': str(month_target_tol_df.final_gmv.apply(amount_convert).iloc[i]),
                 'leader_month_target': str(anchor_target_formatted),
                 'leader_month_target_success_rate': str(target_success_formatted)
             })
@@ -457,8 +499,8 @@ class PerformanceDaily(BaseDag):
         }
 
     def write_to_sheet_logic(self, data_dict: Dict[str, Any]) -> Dict[str, Any]:
-        month_target_tol_df = data_dict['df']['month_target_tol_df']
-        monitor_df = data_dict['df']['monitor_df']
+        month_target_tol_df = data_dict['month_target_tol_df']
+        monitor_df = data_dict['monitor_df']
         self.feishu_sheet.write_df_to_cell('L33FsgXl6h3aZ0tVCzEcsf0qnGe', 'UGZTH6', month_target_tol_df, 1, 1,
                                            True, False)
         monitor_df['number'] = range(1, len(monitor_df) + 1)
@@ -469,8 +511,8 @@ class PerformanceDaily(BaseDag):
     def send_card_logic(self, card: Dict[str, Any], sheet):
         res_1 = {**card['card_1']}
         res_2 = {**card['card_2']}
-        self.feishu_robot.send_msg_card(data=res_1, card_id=self.card_id[0], version_name='1.0.0')
-        self.feishu_robot.send_msg_card(data=res_2, card_id=self.card_id[1], version_name='1.0.3')
+        self.feishu_robot.send_msg_card(data=res_1, card_id=self.card_id[0], version_name='1.0.2')
+        self.feishu_robot.send_msg_card(data=res_2, card_id=self.card_id[1], version_name='1.0.5')
 
 
 dag = PerformanceDaily().create_dag()

@@ -130,7 +130,7 @@ class Slice(BaseDag):
             union all 
             select 
                 order_date 
-                ,'电商MCN' slice_belong
+                ,'电商MCN(乐总)' slice_belong
                 ,port
                 ,account_id
                 ,if(port = 'A', concat('二创(',account_id,')'), concat('二创(',port,'端)')) account_belong 

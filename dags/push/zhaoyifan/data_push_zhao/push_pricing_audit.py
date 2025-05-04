@@ -19,6 +19,13 @@ class PricingAudit(BaseDag):
         self.card_id = 'AAq4mlhtYmLDs'
 
     def fetch_data_logic(self, date_interval: Dict[str, Any]) -> Dict[str, Any]:
+        end_datetime = date_interval['end_datetime']
+        week_start_date = end_datetime.start_of('week').subtract(days=1).format('YYYY-MM-DD')
+        week_end_date = end_datetime.end_of('week').subtract(days=1).format('YYYY-MM-DD')
+        week_start_time = end_datetime.start_of('week').subtract(days=1).format('YYYYMMDD')
+        week_end_time = end_datetime.end_of('week').subtract(days=1).format('YYYYMMDD')
+        now_datetime = end_datetime.format('YYYYMMDDHHmm')
+
         anchor_sql = f'''
             select 
                 anchor_name  
@@ -55,7 +62,7 @@ class PricingAudit(BaseDag):
                     where target = 'product'
                         and ((result in (9,10,22,25)) or (result = 20 and act != 3))
                         and user_id not in ('101279867','20b984bd-07ef-4b4b-95c8-404ac72a0081','25413777','25857336','5085936','21724093')
-                        and date(created_at) between '{date_interval['week_start_date']}'  and '{date_interval['week_end_date']}'
+                        and date(created_at) between '{week_start_date}'  and '{week_end_date}'
                 )review
                 inner join (
                     select 
@@ -130,7 +137,7 @@ class PricingAudit(BaseDag):
                     where target = 'product'
                         and ((result in (9,10,22,25)) or (result = 20 and act != 3))
                         and user_id not in ('101279867','20b984bd-07ef-4b4b-95c8-404ac72a0081','25413777','25857336','5085936','21724093')
-                        and date(created_at) between '{date_interval['week_start_date']}'  and '{date_interval['week_end_date']}'
+                        and date(created_at) between '{week_start_date}'  and '{week_end_date}'
                 )review
                 inner join (
                     select 
@@ -178,7 +185,11 @@ class PricingAudit(BaseDag):
         return {
             'anchor_df': anchor_df,
             'bd_df': bd_df,
-            'date_interval': date_interval
+            'week_start_date': week_start_date,
+            'week_end_date': week_end_date,
+            'week_start_time': week_start_time,
+            'week_end_time': week_end_time,
+            'now_datetime': now_datetime
         }
 
     def prepare_card_logic(self, data_dict: Dict[str, Any]) -> Dict[str, Any]:
@@ -187,7 +198,7 @@ class PricingAudit(BaseDag):
     def write_to_sheet_logic(self, data_dict: Dict[str, Any]) -> Dict[str, Any]:
         anchor_df = data_dict['anchor_df']
         bd_df = data_dict['bd_df']
-        sheet_title = f"成本审核数据_{data_dict['date_interval']['week_start_time']}_{data_dict['date_interval']['week_end_time']}_{data_dict['date_interval']['now_time']}"
+        sheet_title = f"成本审核数据_{data_dict['week_start_time']}_{data_dict['week_end_time']}_{data_dict['now_datetime']}"
         url, spreadsheet_token = self.feishu_sheet_supply.get_workbook_params(
             workbook_name=sheet_title, folder_token='T8Erfo3HnlBnFsd3EgscvfKonEg'
         )

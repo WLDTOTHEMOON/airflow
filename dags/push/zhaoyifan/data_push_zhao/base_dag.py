@@ -76,10 +76,6 @@ class BaseDag(ABC):
                 month_start_timestamp = end_datetime.subtract(days=1).start_of('month').format('YYYYMMDD')
                 now_timestamp = end_datetime.format('YYYYMMDDHHmm')
                 month = end_datetime.subtract(days=1).start_of('month').format('YYYY-MM')
-                week_start_date = end_datetime.subtract(days=1).start_of('week').format('YYYY-MM-DD')
-                week_end_date = end_datetime.subtract(days=1).end_of('week').format('YYYY-MM-DD')
-                week_start_time = end_datetime.subtract(days=1).start_of('week').format('YYYYMMDD')
-                week_end_time = end_datetime.subtract(days=1).end_of('week').format('YYYYMMDD')
                 return {
                     "end_datetime": end_datetime,
                     "yes_ds": yes_date,
@@ -87,11 +83,7 @@ class BaseDag(ABC):
                     "yes_time": yes_timestamp,
                     "month_start_time": month_start_timestamp,
                     "now_time": now_timestamp,
-                    'month': month,
-                    'week_start_date': week_start_date,
-                    'week_end_date': week_end_date,
-                    'week_start_time': week_start_time,
-                    'week_end_time': week_end_time
+                    'month': month
                 }
 
             @task
