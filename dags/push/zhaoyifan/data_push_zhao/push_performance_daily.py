@@ -51,30 +51,30 @@ class PerformanceDaily(BaseDag):
                 order_date
                 ,'切片' anchor_name
                 ,sum(origin_gmv) origin_gmv
-              ,sum(final_gmv) final_gmv
-              ,sum(tol_income) tol_income
+                ,sum(final_gmv) final_gmv
+                ,sum(tol_income) tol_income
             from (
                 select 
                     order_date 
                     ,origin_gmv
-                  ,final_gmv
-                  ,coalesce(estimated_income,0) + coalesce(estimated_service_income,0) tol_income
+                    ,final_gmv
+                    ,coalesce(estimated_income,0) + coalesce(estimated_service_income,0) tol_income
                 from dws.dws_ks_slice_slicer dkss 
                 where order_date between '{date_interval['month_start_ds']}' and '{date_interval['yes_ds']}'
                 union all
                 select 
                     order_date 
                     ,origin_gmv
-                  ,final_gmv
-                  ,coalesce(estimated_income,0) + coalesce(estimated_service_income,0) tol_income
+                    ,final_gmv
+                    ,coalesce(estimated_income,0) + coalesce(estimated_service_income,0) tol_income
                 from dws.dws_ks_slice_recreation dksr 
                 where order_date between '{date_interval['month_start_ds']}' and '{date_interval['yes_ds']}'
                 union all
                 select 
                     order_date 
                     ,origin_gmv
-                  ,final_gmv
-                  ,coalesce(estimated_income,0) + coalesce(estimated_service_income,0) tol_income
+                    ,final_gmv
+                    ,coalesce(estimated_income,0) + coalesce(estimated_service_income,0) tol_income
                 from dws.dws_ks_slice_mcn dksm
                 where order_date between '{date_interval['month_start_ds']}' and '{date_interval['yes_ds']}'
             ) slice
@@ -232,36 +232,39 @@ class PerformanceDaily(BaseDag):
             union all
             select
                 '切片' project
-                ,sum(origin_gmv) origin_gmv
-                ,sum(final_gmv) final_gmv
-                ,sum(final_gmv) / sum(origin_gmv) final_rate
-                ,sum(coalesce(target_final,0)) target_final
-                ,sum(final_gmv)  / sum(coalesce(target_final,0)) target_success_rate
-                ,sum(tol_income) income
+                ,origin_gmv
+                ,final_gmv
+                ,final_gmv / origin_gmv final_rate
+                ,coalesce(target_final,0) target_final
+                ,final_gmv  / coalesce(target_final,0) target_success_rate
+                ,tol_income income
             from (
                 select 
-                    order_date 
-                    ,origin_gmv
-                    ,final_gmv
-                    ,coalesce(estimated_income,0) + coalesce(estimated_service_income,0) tol_income
-                from dws.dws_ks_slice_slicer dkss 
-                where order_date between '{date_interval['month_start_ds']}' and '{date_interval['yes_ds']}'
-                union all
-                select 
-                    order_date 
-                    ,origin_gmv
-                    ,final_gmv
-                    ,coalesce(estimated_income,0) + coalesce(estimated_service_income,0) tol_income
-                from dws.dws_ks_slice_recreation dksr 
-                where order_date between '{date_interval['month_start_ds']}' and '{date_interval['yes_ds']}'
-                union all
-                select 
-                    order_date 
-                    ,origin_gmv
-                    ,final_gmv
-                    ,coalesce(estimated_income,0) + coalesce(estimated_service_income,0) tol_income
-                from dws.dws_ks_slice_mcn dksm
-                where order_date between '{date_interval['month_start_ds']}' and '{date_interval['yes_ds']}'
+                    sum(origin_gmv) origin_gmv
+                    ,sum(final_gmv) final_gmv
+                    ,sum(tol_income) tol_income
+                from (
+                    select 
+                        origin_gmv
+                        ,final_gmv
+                        ,coalesce(estimated_income,0) + coalesce(estimated_service_income,0) tol_income
+                    from dws.dws_ks_slice_slicer dkss 
+                    where order_date between '{date_interval['month_start_ds']}' and '{date_interval['yes_ds']}'
+                    union all
+                    select 
+                        origin_gmv
+                        ,final_gmv
+                        ,coalesce(estimated_income,0) + coalesce(estimated_service_income,0) tol_income
+                    from dws.dws_ks_slice_recreation dksr 
+                    where order_date between '{date_interval['month_start_ds']}' and '{date_interval['yes_ds']}'
+                    union all
+                    select 
+                        origin_gmv
+                        ,final_gmv
+                        ,coalesce(estimated_income,0) + coalesce(estimated_service_income,0) tol_income
+                    from dws.dws_ks_slice_mcn dksm
+                    where order_date between '{date_interval['month_start_ds']}' and '{date_interval['yes_ds']}'
+                ) tol
             ) slice,
             (
                 select
@@ -413,7 +416,7 @@ class PerformanceDaily(BaseDag):
         leader_yes_data = []
         for i in range(yes_tol_df.shape[0]):
             yes_origin_gmv = yes_tol_df.origin_gmv.iloc[i]
-            if yes_origin_gmv == 0:
+            if yes_origin_gmv == 0 or pd.isnull(yes_origin_gmv):
                 yes_origin_gmv = '\\-'
                 yes_final_rate = '\\-'
                 yes_final_gmv = '\\-'
@@ -435,7 +438,7 @@ class PerformanceDaily(BaseDag):
         leader_month_data = []
         for i in range(month_tol_df.shape[0]):
             month_origin_gmv = month_tol_df.origin_gmv.iloc[i]
-            if month_origin_gmv == 0:
+            if month_origin_gmv == 0 or pd.isnull(month_origin_gmv):
                 month_origin_gmv = '\\-'
                 month_final_rate = '\\-'
                 month_final_gmv = '\\-'

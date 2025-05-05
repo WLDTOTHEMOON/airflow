@@ -26,17 +26,9 @@ class FairyLiveSlice(BaseDag):
             select 
                 order_date 
                 ,'小仙女' slice_belong
-                ,port 
-                ,case 
-                    when port = 'A' and author_id = '-' then account_id
-                    when port = 'A' and author_id != '-' then author_id
-                    when port = '电商MCN_A' then account_id
-                    when port = 'B' and author_id = '-' then 'B端'
-                    when port = 'B' and author_id = '999999' then '二创(B端)'
-                    when port = '电商MCN_B' then '二创(B端)'
-                    when port = 'C' then 'C端'
-                  end account_id  
-                ,author_id 
+                ,port
+                ,account_id
+                ,if(port = 'A', concat('剪手(',account_id,')'), concat('剪手(',port,'端)')) account_belong
                 ,item_id 
                 ,item_title 
                 ,origin_gmv 
@@ -44,15 +36,64 @@ class FairyLiveSlice(BaseDag):
                 ,final_gmv 
                 ,final_order_number 
                 ,coalesce(estimated_income,0) + coalesce(estimated_service_income,0) tol_income 
-            from dws.dws_ks_slice_daily dksd 
+                ,update_at
+            from dws.dws_ks_slice_slicer dkss      
+            where order_date between '{date_interval['month_start_ds']}' and '{date_interval['yes_ds']}'
+                and account_id = '146458792'
+            union all
+            select 
+                order_date 
+                ,'小仙女' slice_belong
+                ,port
+                ,account_id
+                ,if(port = 'A',concat('二创(',author_id ,')'), concat('二创(',port,'端)')) account_belong
+                ,item_id 
+                ,item_title 
+                ,origin_gmv 
+                ,origin_order_number 
+                ,final_gmv 
+                ,final_order_number 
+                ,coalesce(estimated_income,0) + coalesce(estimated_service_income,0) tol_income 
+                ,update_at
+            from dws.dws_ks_slice_recreation dksr 
             where order_date between '{date_interval['month_start_ds']}' and '{date_interval['yes_ds']}'
                 and account_id = '146458792'
         '''
         all_df = pd.read_sql(all_sql, self.engine)
-        yes_tol_df = all_df[all_df.order_date.astype(str) >= date_interval['yes_ds']]
+        yes_tol_df = all_df[all_df.order_date.astype(str) == date_interval['yes_ds']]
         yes_tol_df = pd.DataFrame(
             yes_tol_df[['origin_gmv', 'final_gmv', 'origin_order_number', 'tol_income']].sum()).T
         tol_df = pd.DataFrame(all_df[['origin_gmv', 'final_gmv', 'origin_order_number', 'tol_income']].sum()).T
+
+        merge_sql = f'''
+            select 
+                order_date 
+                ,'小仙女' slice_belong
+                ,port
+                ,account_id
+                ,if(port = 'A', concat('剪手(',account_id,')'), concat('剪手(',port,'端)')) account_belong
+                ,item_id 
+                ,item_title 
+                ,origin_order_number 
+                ,final_order_number 
+                ,update_at
+            from dws.dws_ks_slice_slicer dkss  
+            where account_id = '146458792'
+            union all
+            select 
+                order_date 
+                ,'小仙女' slice_belong
+                ,port
+                ,account_id
+                ,if(port = 'A',concat('二创(',author_id ,')'), concat('二创(',port,'端)')) account_belong
+                ,item_id 
+                ,item_title 
+                ,origin_order_number 
+                ,final_order_number 
+                ,update_at
+            from dws.dws_ks_slice_recreation dksr
+            where account_id = '146458792'
+        '''
 
         month_rank_items_sql = f'''
             select 
@@ -88,8 +129,7 @@ class FairyLiveSlice(BaseDag):
                         ) current_final_order_number
                         ,sum(origin_order_number) tol_origin_order_number
                         ,sum(final_order_number) tol_final_order_number
-                    from dws.dws_ks_slice_daily dksd
-                    where account_id = '146458792'
+                    from ({merge_sql}) slice
                     group by 
                         item_id
                 ) tmp
@@ -125,9 +165,8 @@ class FairyLiveSlice(BaseDag):
                     ,sum(origin_order_number) origin_order_number
                     ,1 - sum(final_order_number) / sum(origin_order_number) return_rate
                     ,account_id
-                from dws.dws_ks_slice_daily dksd 
+                from ({merge_sql}) slice
                 where order_date = '{date_interval['yes_ds']}'
-                    and account_id = '146458792'
                 group by 
                     item_id
                     ,item_title
@@ -177,12 +216,12 @@ class FairyLiveSlice(BaseDag):
     def write_to_sheet_logic(self, data_dict: Dict[str, Any]) -> Dict[str, Any]:
         # 切片卖货数据
         all_df = data_dict['all_df']
-        belong_sum_df = all_df.groupby(['slice_belong', 'port', 'account_id'], as_index=False).sum(
+        belong_sum_df = all_df.groupby(['slice_belong', 'port', 'account_belong'], as_index=False).sum(
             numeric_only=True)
         belong_sum_df = belong_sum_df.sort_values(['slice_belong', 'port'])
         belong_sum_df.rename(columns={
             "slice_belong": "切片归属",
-            "account_id": "账号归属",
+            "account_belong": "账号归属",
             'port': '端口',
             "origin_gmv": "支付GMV",
             "origin_order_number": "支付订单数量",
