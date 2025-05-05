@@ -14,7 +14,7 @@ class SupplierSend(BaseDag):
             default_args={'owner': 'zhaoyifan'},
             tags=['push', 'supplier_send'],
             robot_url=Variable.get('TEST'),
-            schedule='0 11 * * 1'
+            schedule='0 3 * * 1'
         )
         self.card_id = 'AAq4HQvobYgca'
 
