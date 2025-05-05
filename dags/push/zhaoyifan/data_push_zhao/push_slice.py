@@ -9,13 +9,13 @@ from dags.push.zhaoyifan.data_push_zhao.format_utils import *
 logger = logging.getLogger(__name__)
 
 
-class Slice(BaseDag):
+class LiveSlice(BaseDag):
     def __init__(self):
         super().__init__(
-            dag_id='push_slice',
+            dag_id='push_live_slice',
             default_args={'owner': 'zhaoyifan'},
             robot_url=Variable.get('TEST'),
-            tags=['push', 'slice'],
+            tags=['push', 'live_slice'],
             schedule='0 5 * * *'
         )
         self.card_id = 'AAqRWKhJEyCYM'
@@ -434,4 +434,4 @@ class Slice(BaseDag):
         self.feishu_robot.send_msg_card(data=res, card_id=self.card_id, version_name='1.0.3')
 
 
-dag = Slice().create_dag()
+dag = LiveSlice().create_dag()
