@@ -44,10 +44,7 @@ class AbstractDagTask(ABC):
 
     @staticmethod
     def percent_convert(num):
-        if num:
-            return str(round(num * 100, 2)) + '%'
-        else:
-            return num
+        return str(round(num * 100, 2)) + '%'
 
     @abstractmethod
     def fetch_data(self, **kwargs) -> Dict:
