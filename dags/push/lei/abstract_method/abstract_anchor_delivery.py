@@ -111,6 +111,10 @@ class AbstractAnchorDelivery(AbstractDagTask):
 
         processed_data.deliver_rate = processed_data.deliver_rate.apply(self.percent_convert)
         processed_data.refund_rate = processed_data.refund_rate.apply(self.percent_convert)
+        processed_data = processed_data.astype({
+            'deliver_rate': str,
+            'refund_rate': str,
+        })
         processed_data.rename(columns={
             'order_date': '卖货时间',
             'account_id': '主播ID',

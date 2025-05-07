@@ -128,13 +128,17 @@ class AbstractSliceDelivery(AbstractDagTask):
                 'item_title': group_data.item_title.iloc[i],
                 'valid_order_number': str(int(group_data.final_order_number.iloc[i])),
                 'undelivered_number': str(int(group_data.wait_send_order_number.iloc[i])),
-                'delivery_rate': self.percent_convert(group_data.send_rate.iloc[i]),
+                'delivery_rate': str(self.percent_convert(group_data.send_rate.iloc[i]))
             })
 
         # 文件数据处理
         process_data.order_date = process_data.order_date.astype(str)
         process_data.send_rate = process_data.send_rate.apply(self.percent_convert)
         process_data.invalid_rate = process_data.invalid_rate.apply(self.percent_convert)
+        process_data = process_data.astype({
+            'send_rate': str,
+            'invalid_rate': str,
+        })
 
         process_data.rename(columns={
             'order_date': '卖货时间',

@@ -79,11 +79,15 @@ class AbstractXiaDelivery(AbstractDagTask):
                 'item_title': group_table_data.item_title.iloc[i],
                 'valid_order_number': str(group_table_data.final_order_number.iloc[i]),
                 'undelivered_number': str(group_table_data.wait_send_order_number.iloc[i]),
-                'delivery_rate': self.percent_convert(group_table_data.send_rate.iloc[i]),
+                'delivery_rate': str(self.percent_convert(group_table_data.send_rate.iloc[i])),
             })
 
         processed_data.send_rate = processed_data.send_rate.apply(self.percent_convert)
         processed_data.invalid_rate = processed_data.invalid_rate.apply(self.percent_convert)
+        processed_data = processed_data.astype({
+            'send_rate': str,
+            'invalid_rate': str
+        })
         processed_data.rename(columns={
             'order_date': '卖货时间',
             'account_id': '账号ID',
