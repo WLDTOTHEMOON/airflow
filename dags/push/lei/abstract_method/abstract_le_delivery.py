@@ -86,6 +86,10 @@ class AbstractLeDelivery(AbstractDagTask):
 
         processed_data.send_rate = processed_data.send_rate.apply(self.percent_convert)
         processed_data.invalid_rate = processed_data.invalid_rate.apply(self.percent_convert)
+        processed_data = processed_data.astype({
+            'send_rate': str,
+            'invalid_rate': str,
+        })
         processed_data.rename(columns={
             'order_date': '卖货时间',
             'account_id': '账号ID',
