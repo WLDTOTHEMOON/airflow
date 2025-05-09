@@ -63,7 +63,8 @@ class BaseDag(ABC):
             start_date=pendulum.datetime(2023, 1, 1),
             catchup=False,
             default_args=self.default_args,
-            tags=self.tags
+            tags=self.tags,
+            max_active_tasks=1
         )
         def generated_dag():
             @task
