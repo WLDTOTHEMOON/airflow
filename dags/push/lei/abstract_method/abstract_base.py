@@ -30,7 +30,7 @@ class AbstractDagTask(ABC):
     ):
         self.dag_id = dag_id
         self.schedule = schedule
-        self.default_args = default_args.update(on_failure_callback=task_failure_callback)
+        self.default_args = default_args
         self.tags = tags
         self.feishu_sheet = feishu_sheet or FeishuSheet(**Variable.get('feishu', deserialize_json=True))
         self.feishu_robot = feishu_robot or FeishuRobot(robot_url)
