@@ -10,7 +10,6 @@ class GmvDag(BaseDag):
     def __init__(self):
         super().__init__(
             dag_id='gmv',
-            default_args={'owner': 'zhaoyifan'},
             robot_url='SELFTEST',
             tags=['example'],
             schedule=None

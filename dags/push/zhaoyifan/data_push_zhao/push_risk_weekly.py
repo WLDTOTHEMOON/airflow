@@ -11,7 +11,6 @@ class RiskWeekly(BaseDag):
     def __init__(self):
         super().__init__(
             dag_id='push_risk_weekly',
-            default_args={'owner': 'zhaoyifan'},
             tags=['push', 'risk_weekly'],
             robot_url=Variable.get('TEST'),
             schedule='0 21 * * 7'

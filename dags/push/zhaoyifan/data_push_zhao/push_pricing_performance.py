@@ -14,7 +14,6 @@ class PricingPerformance(BaseDag):
     def __init__(self):
         super().__init__(
             dag_id='push_pricing_performance',
-            default_args={'owner': 'zhaoyifan'},
             robot_url=Variable.get('TEST'),
             tags=['push', 'pricing_performance'],
             schedule='0 3 * * *'

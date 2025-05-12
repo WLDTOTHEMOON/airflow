@@ -12,7 +12,6 @@ class PerformanceDaily(BaseDag):
     def __init__(self):
         super().__init__(
             dag_id='push_performance_daily',
-            default_args={'owner': 'zhaoyifan'},
             tags=['push', 'performance_daily'],
             robot_url=Variable.get('TEST'),
             schedule='0 5 * * *'

@@ -13,7 +13,6 @@ class LiveSlice(BaseDag):
     def __init__(self):
         super().__init__(
             dag_id='push_live_slice',
-            default_args={'owner': 'zhaoyifan'},
             robot_url=Variable.get('TEST'),
             tags=['push', 'live_slice'],
             schedule='0 5 * * *'
