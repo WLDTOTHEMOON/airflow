@@ -10,6 +10,7 @@ from include.database.mysql import engine
 from include.feishu.feishu_app_robot import FeishuAppRobot
 from include.feishu.feishu_robot import FeishuRobot
 from include.feishu.feishu_sheet import FeishuSheet
+from include.service.message import task_failure_callback
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +30,7 @@ class AbstractDagTask(ABC):
     ):
         self.dag_id = dag_id
         self.schedule = schedule
-        self.default_args = default_args
+        self.default_args = default_args.update(on_failure_callback=task_failure_callback)
         self.tags = tags
         self.feishu_sheet = feishu_sheet or FeishuSheet(**Variable.get('feishu', deserialize_json=True))
         self.feishu_robot = feishu_robot or FeishuRobot(robot_url)
