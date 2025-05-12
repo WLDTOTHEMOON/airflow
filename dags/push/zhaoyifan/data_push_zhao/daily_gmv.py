@@ -3,6 +3,7 @@ from abc import ABC
 from airflow.decorators import dag, task
 import pendulum
 from dags.push.zhaoyifan.data_push_zhao.base_dag import BaseDag
+from airflow.models import Variable
 import pandas as pd
 
 
@@ -10,7 +11,7 @@ class GmvDag(BaseDag):
     def __init__(self):
         super().__init__(
             dag_id='gmv',
-            robot_url='SELFTEST',
+            robot_url=Variable.get('SELFTEST'),
             tags=['example'],
             schedule=None
         )
@@ -52,7 +53,6 @@ class GmvDag(BaseDag):
             'origin_order_number': '支付订单数',
             'commission_income': '佣金收入'
         })
-
         date_interval = data_params['date_interval']
         workbook_name = f"测试数据_{date_interval['month_start_time']}_{date_interval['yes_time']}_{date_interval['now_time']}"
 
@@ -79,7 +79,7 @@ class GmvDag(BaseDag):
             'yes_date': sheet['date_interval']['yes_ds'],
             'month_start_date': sheet['date_interval']['month_start_ds']
         }
-        self.feishu_robot.send_msg_card(data=res, card_id=self.card_id, version_name='1.0.0')
+        self.feishu_robot.send_msg_card(data=res, card_id=self.card_id, version_name='1.0.1')
 
 
 gmv_dag = GmvDag().create_dag()
