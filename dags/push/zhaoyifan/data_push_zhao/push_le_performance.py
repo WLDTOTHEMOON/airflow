@@ -14,7 +14,6 @@ class LePerformance(BaseDag):
     def __init__(self):
         super().__init__(
             dag_id='push_le_performance',
-            default_args={'owner': 'zhaoyifan'},
             robot_url=Variable.get('TEST'),
             tags=['push', 'le_performance'],
             schedule='0 5 * * *'

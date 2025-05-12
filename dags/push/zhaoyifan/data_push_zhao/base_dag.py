@@ -9,6 +9,7 @@ from include.database.mysql import engine
 from include.feishu.feishu_sheet import FeishuSheet
 from include.feishu.feishu_robot import FeishuRobot
 from dags.push.zhaoyifan.data_push_zhao.feishu_provider import FeishuSheetManager
+from include.service.message import task_failure_callback
 # logger = logging.getLogger(__name__)
 
 
@@ -19,7 +20,6 @@ class BaseDag(ABC):
             self,
             dag_id: str,
             schedule: Any,
-            default_args: dict,
             tags: list[str],
             robot_url: str,
             feishu_sheet: FeishuSheet = None,
@@ -28,7 +28,6 @@ class BaseDag(ABC):
     ):
         self.dag_id = dag_id
         self.schedule = schedule
-        self.default_args = default_args
         self.tags = tags
         self.feishu_sheet_supply = FeishuSheetManager()
         self.feishu_sheet = feishu_sheet or FeishuSheet(**Variable.get('feishu', deserialize_json=True))
@@ -62,7 +61,12 @@ class BaseDag(ABC):
             schedule=self.schedule,
             start_date=pendulum.datetime(2023, 1, 1),
             catchup=False,
-            default_args=self.default_args,
+            default_args={
+                'owner': 'zhaoyifan',
+                'on_failure_callback': task_failure_callback,
+                'retries': 5,
+                'retry_delay': pendulum.duration(seconds=10)
+            },
             tags=self.tags,
             max_active_tasks=1
         )

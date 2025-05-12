@@ -11,7 +11,6 @@ class PricingAudit(BaseDag):
     def __init__(self):
         super().__init__(
             dag_id='push_pricing_audit',
-            default_args={'owner': 'zhaoyifan'},
             tags=['push', 'pricing_audit'],
             robot_url=Variable.get('TEST'),
             schedule='0 21 * * 6'
@@ -24,6 +23,8 @@ class PricingAudit(BaseDag):
         week_end_date = end_datetime.end_of('week').subtract(days=1).format('YYYY-MM-DD')
         week_start_time = end_datetime.start_of('week').subtract(days=1).format('YYYYMMDD')
         week_end_time = end_datetime.end_of('week').subtract(days=1).format('YYYYMMDD')
+        week_start_format = end_datetime.start_of('week').subtract(days=1).format('MM月DD日')
+        week_end_format = end_datetime.end_of('week').subtract(days=1).format('MM月DD日')
         now_datetime = end_datetime.format('YYYYMMDDHHmm')
 
         anchor_sql = f'''
@@ -189,6 +190,8 @@ class PricingAudit(BaseDag):
             'week_end_date': week_end_date,
             'week_start_time': week_start_time,
             'week_end_time': week_end_time,
+            'week_start_format': week_start_format,
+            'week_end_format': week_end_format,
             'now_datetime': now_datetime
         }
 
@@ -239,9 +242,8 @@ class PricingAudit(BaseDag):
             insert_data = {
                 'row': {
                     "range": 'A1:A1',
-                    "value": (
-                        f"成本审核{data_dict['date_interval']['end_datetime'].subtract(days=7).format('MM月DD日')}"
-                        f"至{data_dict['date_interval']['end_datetime'].subtract(days=1).format('MM月DD日')}数据")
+                    "value":
+                        f"成本审核{data_dict['week_start_format']}至{data_dict['week_end_format']}数据"
                 }
             }
 

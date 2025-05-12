@@ -14,7 +14,6 @@ class FairyLiveSlice(BaseDag):
     def __init__(self):
         super().__init__(
             dag_id='push_fairy_live_slice',
-            default_args={'owner': 'zhaoyifan'},
             robot_url=Variable.get('TEST'),
             tags=['push', 'fairy_slice'],
             schedule='0 5 * * *'

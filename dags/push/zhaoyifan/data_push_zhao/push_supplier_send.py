@@ -11,7 +11,6 @@ class SupplierSend(BaseDag):
     def __init__(self):
         super().__init__(
             dag_id='push_supplier_send',
-            default_args={'owner': 'zhaoyifan'},
             tags=['push', 'supplier_send'],
             robot_url=Variable.get('TEST'),
             schedule='0 3 * * 1'

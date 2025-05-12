@@ -11,7 +11,6 @@ class LeMoItem(BaseDag):
     def __init__(self):
         super().__init__(
             dag_id='push_le_mo_item',
-            default_args={'owner': 'zhaoyifan'},
             tags=['push', 'item'],
             robot_url=Variable.get('TEST'),
             schedule='0 7 * * *'
