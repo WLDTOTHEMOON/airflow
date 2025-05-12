@@ -15,7 +15,7 @@ class LiveSlice(BaseDag):
             dag_id='push_live_slice',
             robot_url=Variable.get('TEST'),
             tags=['push', 'live_slice'],
-            schedule='0 5 * * *'
+            schedule='0 1 * * *'
         )
         self.card_id = 'AAqRWKhJEyCYM'
 
