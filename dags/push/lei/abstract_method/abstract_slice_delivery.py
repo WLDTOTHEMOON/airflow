@@ -185,11 +185,14 @@ class AbstractSliceDelivery(AbstractDagTask):
     def render_feishu_format(
             self,
             processed_data: Dict,
-            spreadsheet_token: str,
-            sheet_id: str
+            file_info: Dict
     ):
         logger.info('渲染飞书格式')
         process_data = processed_data['process_data']
+
+        spreadsheet_token = file_info['spreadsheet_token']
+        sheet_id = file_info['cps_sheet_id']
+
         style_dict = {
             'A1:' + self.col_convert(process_data.shape[1]) + '1': {
                 'font': {
@@ -206,9 +209,13 @@ class AbstractSliceDelivery(AbstractDagTask):
             )
         return processed_data
 
-    def send_card(self, url: str, title: str, data_dic: Dict):
+    def send_card(self, file_info: Dict, data_dic: Dict):
         logger.info('发送卡片')
         group_data = data_dic['group_data']
+
+        title = file_info['title']
+        url = file_info['url']
+
         data = {
             'title': '发货进度监控（切片）',
             'file_name': title,

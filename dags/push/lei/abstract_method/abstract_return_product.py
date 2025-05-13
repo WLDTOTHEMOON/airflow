@@ -22,7 +22,7 @@ class AbstractReturnProduct(AbstractDagTask):
                 'provide_context': True
             },
             tags=['push', 'return_product'],
-            robot_url=Variable.get('OBITO'),
+            robot_url=Variable.get('TEST'),
         )
         self.card_id: str = 'AAqRPrHrP2wKb'
 
@@ -134,14 +134,18 @@ class AbstractReturnProduct(AbstractDagTask):
     def render_feishu_format(
             self,
             processed_data: Dict,
-            spreadsheet_token: str,
-            sheet_id: str
+            file_info: Dict
     ):
+        spreadsheet_token = file_info['spreadsheet_token']
+        sheet_id = file_info['cps_sheet_id']
         self.feishu_sheet.write_df_replace(processed_data['process_data'], spreadsheet_token, sheet_id)
 
         return processed_data
 
-    def send_card(self, url: str, title: str, data_dic: Dict):
+    def send_card(self, file_info: Dict, data_dic: Dict):
+        title = file_info['title']
+        url = file_info['url']
+
         data = {
             'title': '品控成本退回数据',
             'file_name': title,

@@ -136,9 +136,13 @@ class AbstractItemCommission(AbstractDagTask):
             'title': title
         }
 
-    def render_feishu_format(self, processed_data_dict: Dict, spreadsheet_token: str, cps_sheet_id: str) -> Dict:
+    def render_feishu_format(self, processed_data_dict: Dict, file_info: Dict) -> Dict:
         logger.info(f'渲染飞书格式')
         process_data = processed_data_dict['process_data']
+
+        spreadsheet_token = file_info['spreadsheet_token']
+        cps_sheet_id = file_info['cps_sheet_id']
+
         cps_style_dict = {
             'A1:' + self.col_convert(process_data.shape[1]) + '1': {
                 'font': {
@@ -154,8 +158,10 @@ class AbstractItemCommission(AbstractDagTask):
             )
         return processed_data_dict
 
-    def send_card(self, url: str, title: str, data_dict: Dict):
+    def send_card(self, file_info: Dict, data_dict: Dict):
         logger.info(f'发送卡片')
+        title = file_info['title']
+        url = file_info['url']
 
         res = {
             'title': '商品佣金率',

@@ -89,14 +89,14 @@ class AbstractCrawlerLog(AbstractDagTask):
     def render_feishu_format(
             self,
             processed_data: Dict,
-            spreadsheet_token: str,
-            sheet_id: str
+            file_info: Dict
     ):
         return processed_data
 
-    def send_card(self, url: str, title: str, data_dic: Dict):
+    def send_card(self, file_info: Dict, data_dic: Dict):
         logger.info(f'发送卡片')
         group_data = data_dic['group_data']
+        title = file_info['title']
 
         res = {
             'now_date': title,

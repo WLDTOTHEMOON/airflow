@@ -135,12 +135,14 @@ class AbstractTdCover(AbstractDagTask):
     def render_feishu_format(
             self,
             processed_data_dict: Dict,
-            spreadsheet_token: str,
-            cps_sheet_id: str
+            file_info: Dict
     ) -> Dict:
         logger.info(f'渲染飞书格式')
         cover_rate_data = processed_data_dict['cover_rate_data']
         cover_num_data = processed_data_dict['cover_num_data']
+
+        spreadsheet_token = file_info['spreadsheet_token']
+        cps_sheet_id = file_info['cps_sheet_id']
 
         style_dict = {
             'A1:' + self.col_convert(cover_rate_data.shape[1]) + '1': {
@@ -186,8 +188,10 @@ class AbstractTdCover(AbstractDagTask):
 
         return processed_data_dict
 
-    def send_card(self, url: str, title: str, data_dic: Dict):
+    def send_card(self, file_info: Dict, data_dic: Dict):
         logger.info(f'发送卡片')
+        title = file_info['title']
+        url = file_info['url']
 
         data = {
             'title': '徒弟主播推品覆盖率',

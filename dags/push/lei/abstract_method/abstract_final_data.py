@@ -157,10 +157,12 @@ class AbstractFinalData(AbstractDagTask):
     def render_feishu_format(
             self,
             processed_data: Dict,
-            spreadsheet_token: str,
-            cps_sheet_id: str
+            file_info: Dict
     ) -> Dict:
         logger.info(f'渲染飞书格式')
+        spreadsheet_token = file_info['spreadsheet_token']
+        cps_sheet_id = file_info['cps_sheet_id']
+
         cps_style_dict = {
             'A1:' + self.col_convert(processed_data['item_category'].shape[1]) + '1': {
                 'font': {
@@ -196,8 +198,10 @@ class AbstractFinalData(AbstractDagTask):
 
         return processed_data
 
-    def send_card(self, url: str, title: str, data_dic: Dict):
+    def send_card(self, file_info: Dict, data_dic: Dict):
         logger.info(f'发送卡片')
+        title = file_info['title']
+        url = file_info['url']
 
         data = {
             'title': '主播结算数据',

@@ -186,14 +186,13 @@ class AbstractMoReturn(AbstractDagTask):
     def render_feishu_format(
             self,
             process_data_dict: Dict,
-            spreadsheet_token: str,
-            cps_sheet_id: str
+            file_info: Dict
     ) -> Dict:
         mo_detail_data = process_data_dict['mo_detail_data']
         td_detail_data = process_data_dict['td_detail_data']
         group_total_data = process_data_dict['group_total_data']
 
-        title_date = spreadsheet_token
+        title_date = file_info['spreadsheet_token']
 
         # 墨晨夏商品明细
         style_dict = {
@@ -308,7 +307,7 @@ class AbstractMoReturn(AbstractDagTask):
 
         return process_data_dict
 
-    def send_card(self, url: str, title: str, data_dict: Dict):
+    def send_card(self, file_info: Dict, data_dict: Dict):
         res = {
             'title': '退货率报表截图',
             'file_name': '退货率报表截图',

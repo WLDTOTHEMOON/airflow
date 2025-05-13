@@ -258,12 +258,15 @@ class AbstractEstimatePnl(AbstractDagTask):
     def render_feishu_format(
             self,
             processed_data: Dict,
-            spreadsheet_token: str,
-            sheet_id: str
+            file_info: Dict
     ):
         detail = processed_data['detail']
         summary = processed_data['summary']
         slice_income = processed_data['slice_income']
+
+        spreadsheet_token = file_info['spreadsheet_token']
+        sheet_id = file_info['cps_sheet_id']
+
         style_dict_detail = {
             'A1:' + self.col_convert(detail.shape[1]) + '1': {
                 'font': {
@@ -340,8 +343,10 @@ class AbstractEstimatePnl(AbstractDagTask):
             )
         return processed_data
 
-    def send_card(self, url: str, title: str, data_dict: Dict):
+    def send_card(self, file_info: Dict, data_dict: Dict):
         logger.info(f'发送卡片')
+        title = file_info['title']
+        url = file_info['url']
 
         data = {
             'title': '公司收入预测',

@@ -523,7 +523,7 @@ class AbstractBdWeek(AbstractDagTask):
             'title': title
         }
 
-    def render_feishu_format(self, processed_data: Dict, spreadsheet_token: str, sheet_id: str):
+    def render_feishu_format(self, processed_data: Dict, file_info: Dict):
         bd_gmv = processed_data['bd_gmv_df']
         bd_product_num = processed_data['bd_product_df']
         bd_put_num = processed_data['bd_put_df']
@@ -533,6 +533,9 @@ class AbstractBdWeek(AbstractDagTask):
         td_product = processed_data['td_product_df']
         explosive_product = processed_data['explosive_product_df']
         return_rate = processed_data['return_rate_df']
+
+        spreadsheet_token = file_info['spreadsheet_token']
+        sheet_id = file_info['cps_sheet_id']
 
         style_dict = {
             'A1:' + self.col_convert(bd_gmv.shape[1]) + '1': {
@@ -709,8 +712,10 @@ class AbstractBdWeek(AbstractDagTask):
 
         return processed_data
 
-    def send_card(self, url: str, title: str, data_dict: Dict):
+    def send_card(self, file_info: Dict, data_dict: Dict):
         logger.info(f'发送卡片')
+        title = file_info['title']
+        url = file_info['url']
 
         data = {
             'title': '商务周报数据',

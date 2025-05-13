@@ -21,7 +21,7 @@ class AbstractSupplementFlow(AbstractDagTask):
                 'provide_context': True
             },
             tags=['push', 'supplement_flow'],
-            robot_url=Variable.get('CRYPTO'),
+            robot_url=Variable.get('TEST'),
         )
         self.card_id: str = 'AAqRPrHrP2wKb'
 
@@ -149,11 +149,13 @@ class AbstractSupplementFlow(AbstractDagTask):
     def render_feishu_format(
             self,
             process_data_dict: Dict,
-            spreadsheet_token: str,
-            cps_sheet_id: str
+            file_info: Dict
     ) -> Dict:
         logger.info(f'渲染飞书格式')
         process_data = process_data_dict['process_supplement_flow_df']
+
+        spreadsheet_token = file_info['spreadsheet_token']
+        cps_sheet_id = file_info['cps_sheet_id']
 
         cps_style_dict = {
             'A1:' + self.col_convert(process_data.shape[1]) + '1': {
@@ -178,8 +180,10 @@ class AbstractSupplementFlow(AbstractDagTask):
             )
         return process_data_dict
 
-    def send_card(self, url, title, process_data_dict):
+    def send_card(self, file_info: Dict, process_data_dict):
         logger.info(f'发送卡片')
+        title = file_info['title']
+        url = file_info['url']
 
         data = {
             'title': '待补流程链接',

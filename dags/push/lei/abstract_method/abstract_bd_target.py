@@ -121,12 +121,11 @@ class AbstractBdTarget(AbstractDagTask):
     def render_feishu_format(
             self,
             process_data_dict: Dict,
-            spreadsheet_token: str,
-            cps_sheet_id: str
+            file_info: Dict
     ) -> Dict:
         return process_data_dict
 
-    def send_card(self, url: str, title: str, data_dict: Dict):
+    def send_card(self, file_info: Dict, data_dict: Dict):
         logger.info(f'发送卡片')
         group_table_detail = data_dict['group_table_detail']
         group_table_summary = data_dict['group_table_summary']

@@ -268,18 +268,22 @@ class AbstractCwsData(AbstractDagTask):
     def render_feishu_format(
             self,
             processed_data: Any,
-            spreadsheet_token: str,
-            sheet_id: str
+            file_info: Dict
     ):
         data_one = processed_data['data_one']
         data_three = processed_data['data_three']
+
+        spreadsheet_token = file_info['spreadsheet_token']
+        sheet_id = file_info['cps_sheet_id']
 
         self.feishu_sheet.write_df_replace(data_three, spreadsheet_token, sheet_id[1], to_char=False)
         self.feishu_sheet.write_df_replace(data_one, spreadsheet_token, sheet_id[0], to_char=False)
         return processed_data
 
-    def send_card(self, url: str, title: str, data_dict: Dict):
+    def send_card(self, file_info: Dict, data_dict: Dict):
         logger.info(f'发送卡片')
+        title = file_info['title']
+        url = file_info['url']
 
         data = {
             'title': '财务数据',

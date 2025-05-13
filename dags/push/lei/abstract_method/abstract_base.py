@@ -61,8 +61,7 @@ class AbstractDagTask(ABC):
     def render_feishu_format(
             self,
             processed_data: Any,
-            spreadsheet_token: str,
-            sheet_id: str
+            file_value: Dict
     ):
         """Render data to Feishu sheet format"""
         raise NotImplementedError
@@ -70,15 +69,20 @@ class AbstractDagTask(ABC):
     @abstractmethod
     def create_feishu_file(self, data_dic: Dict, **kwargs) -> Dict:
         """Create Feishu file and return access info"""
-        raise {}
+        raise {
+            'spreadsheet_token': 'spreadsheet_token',
+            'cps_sheet_id': 'cps_sheet_id',
+            'url': 'url',
+            'title': 'title'
+        }
 
     @abstractmethod
-    def send_card(self, file_key: str, title: str, flag):
+    def send_card(self, file_value: Dict, process_data_dict: Dict):
         """Send notification card with file link"""
         raise NotImplementedError
 
     def create_dag(self):
-        self.default_args.update(on_failure_callback=task_failure_callback)
+        # self.default_args.update(on_failure_callback=task_failure_callback)
         @dag(
             dag_id=self.dag_id,
             schedule=self.schedule,
@@ -87,35 +91,33 @@ class AbstractDagTask(ABC):
             catchup=False
         )
         def generated_dag():
-            @task(task_id='fetch_data_task', retries=2)
+            @task(task_id='fetch_data_task', retries=2, multiple_outputs=False)
             def fetch_data_task(**kwargs):
                 return self.fetch_data(**kwargs)
 
-            @task(task_id='process_data_task')
+            @task(task_id='process_data_task', multiple_outputs=False)
             def process_data_task(data, **kwargs):
                 return self.process_data(data, **kwargs)
 
-            @task(task_id='create_feishu_file_task', multiple_outputs=True)
+            @task(task_id='create_feishu_file_task', multiple_outputs=False)
             def create_feishu_file_task(data_dic: Dict, **kwargs):
                 return self.create_feishu_file(data_dic, **kwargs)
 
-            @task(task_id='render_feishu_format_task')
-            def render_feishu_format_task(process_data, spreadsheet_token, sheet_id):
+            @task(task_id='render_feishu_format_task', multiple_outputs=False)
+            def render_feishu_format_task(process_data, file_value):
                 return self.render_feishu_format(
                     process_data,
-                    spreadsheet_token,
-                    sheet_id
+                    file_value
                 )
 
-            @task(task_id='send_card_task')
-            def send_card_task(url, title, data_dic):
-                return self.send_card(url, title, data_dic)
+            @task(task_id='send_card_task', multiple_outputs=False)
+            def send_card_task(file_value, data_dic):
+                return self.send_card(file_value, data_dic)
 
             data_dict = fetch_data_task()
             processed_data_dict = process_data_task(data_dict)
             file_info = create_feishu_file_task(data_dict)
-            processed_data_dict = render_feishu_format_task(processed_data_dict, file_info['spreadsheet_token'],
-                                                            file_info['cps_sheet_id'])
-            send_card_task(file_info['url'], file_info['title'], processed_data_dict)
+            processed_data_dict = render_feishu_format_task(processed_data_dict, file_info)
+            send_card_task(file_info, processed_data_dict)
 
         return generated_dag()
