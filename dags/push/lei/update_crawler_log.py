@@ -33,7 +33,7 @@ def update_crawler_log():
             for i in task_id:
                 sql = f'''
                         insert into tmp.tmp_crawler_log(task_id,start_time,end_time,status,update_time,remark)
-                            values('{i}','{begin_time}','{end_time}',0,null,null)
+                            values('{i}','{begin_time}','{end_time}',4,null,null)
                         '''
                 engine.connect().execute(sql)
 
@@ -42,14 +42,14 @@ def update_crawler_log():
             end_time = start_time.strftime('%Y-%m-%d %H:%M:%S')
             sql = f'''
                     insert into tmp.tmp_crawler_log(task_id,start_time,end_time,status,update_time,remark)
-                        values('86765902','{begin_time}','{end_time}',0,null,null)
+                        values('86765902','{begin_time}','{end_time}',4,null,null)
                         '''
             engine.connect().execute(sql)
 
             # MCN订单
             sql = f'''
                     insert into tmp.tmp_crawler_log(task_id,start_time,end_time,status,update_time,remark)
-                        values('MCN','{begin_time}','{end_time}',0,null,null)
+                        values('MCN','{begin_time}','{end_time}',4,null,null)
                                 '''
             engine.connect().execute(sql)
 
@@ -59,7 +59,7 @@ def update_crawler_log():
             end_time = start_time.subtract(days=1).strftime('%Y-%m-%d 00:00:00')
             sql = f'''
                     insert into tmp.tmp_crawler_log(task_id,start_time,end_time,status,update_time,remark)
-                        values('live_record','{begin_time}','{end_time}',0,null,null)
+                        values('live_record','{begin_time}','{end_time}',4,null,null)
                         '''
             engine.connect().execute(sql)
 
