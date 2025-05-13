@@ -71,7 +71,7 @@ class BaseDag(ABC):
             max_active_tasks=1
         )
         def generated_dag():
-            @task
+            @task(multiple_outputs=False)
             def get_date_params(**context) -> Dict[str, Any]:
                 """Time parameter acquisition (fixed logic)"""
                 end_datetime = context['data_interval_end'].in_tz('Asia/Shanghai')
@@ -91,19 +91,19 @@ class BaseDag(ABC):
                     'month': month
                 }
 
-            @task
+            @task(multiple_outputs=False)
             def fetch_data(date_interval: Dict[str, Any]) -> Dict[str, Any]:
                 return self.fetch_data_logic(date_interval)
 
-            @task
+            @task(multiple_outputs=False)
             def prepare_card(data_dict: Dict[str, Any]) -> Dict[str, Any]:
                 return self.prepare_card_logic(data_dict)
 
-            @task
+            @task(multiple_outputs=False)
             def write_to_sheet(data_dict: Dict[str, Any]) -> Dict[str, Any]:
                 return self.write_to_sheet_logic(data_dict)
 
-            @task
+            @task(multiple_outputs=False)
             def send_card(card: Dict[str, Any], sheet):
                 self.send_card_logic(card, sheet)
 

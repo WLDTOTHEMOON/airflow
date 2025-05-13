@@ -14,7 +14,7 @@ class WyPerformance(BaseDag):
     def __init__(self):
         super().__init__(
             dag_id='push_wy_performance',
-            robot_url=Variable.get('TEST'),
+            robot_url=Variable.get('Sesshoumaru'),
             tags=['push', 'wy_performance'],
             schedule='0 5 * * *'
         )
