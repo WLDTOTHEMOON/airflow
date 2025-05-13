@@ -22,7 +22,7 @@ class AbstractReturnProduct(AbstractDagTask):
                 'provide_context': True
             },
             tags=['push', 'return_product'],
-            robot_url=Variable.get('TEST'),
+            robot_url=Variable.get('OBITO'),
         )
         self.card_id: str = 'AAqRPrHrP2wKb'
 

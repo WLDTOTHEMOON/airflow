@@ -20,7 +20,7 @@ class AbstractOrganizationGMV(AbstractDagTask):
                 'start_date': pendulum.datetime(2023, 1, 1),
             },
             tags=['push', 'organization_gmv'],
-            robot_url=Variable.get('TEST')
+            robot_url=Variable.get('KUCHIKI')
         )
         self.card_id = 'AAqRPrHrP2wKb'
 

@@ -21,7 +21,7 @@ class AbstractBdWeek(AbstractDagTask):
                 'provide_context': True
             },
             tags=['push', 'bd_week'],
-            robot_url=Variable.get('TEST'),
+            robot_url=Variable.get('LIFELINE'),
         )
         self.card_id: str = 'AAqRPrHrP2wKb'
 

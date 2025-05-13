@@ -21,7 +21,7 @@ class AbstractSupplementFlow(AbstractDagTask):
                 'provide_context': True
             },
             tags=['push', 'supplement_flow'],
-            robot_url=Variable.get('TEST'),
+            robot_url=Variable.get('CRYPTO'),
         )
         self.card_id: str = 'AAqRPrHrP2wKb'
 
