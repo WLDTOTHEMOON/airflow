@@ -1,7 +1,9 @@
-from airflow.decorators import dag, task
 import logging
+
 import pendulum
+from airflow.decorators import dag, task
 from include.database.mysql import engine
+from include.service.message import task_failure_callback
 
 logger = logging.getLogger(__name__)
 
@@ -12,7 +14,8 @@ logger = logging.getLogger(__name__)
     default_args=
     {
         'owner': 'Lei Jiangling',
-        'start_date': pendulum.datetime(2025, 5, 12)
+        'start_date': pendulum.datetime(2025, 5, 12),
+        'on_failure_callback': task_failure_callback
     },
     tags=['update', 'crawler_log']
 )
