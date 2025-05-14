@@ -82,7 +82,7 @@ class AbstractDagTask(ABC):
         raise NotImplementedError
 
     def create_dag(self):
-        # self.default_args.update(on_failure_callback=task_failure_callback)
+        self.default_args.update(on_failure_callback=task_failure_callback)
         @dag(
             dag_id=self.dag_id,
             schedule=self.schedule,

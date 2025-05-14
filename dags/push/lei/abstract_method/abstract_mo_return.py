@@ -136,7 +136,7 @@ class AbstractMoReturn(AbstractDagTask):
         td_detail_data = data['td_detail_df']
         group_total_data = data['group_total_df']
 
-        mo_detail_data['refund_rate'] = mo_detail_data['refund_rate'].notnull().apply(self.percent_convert)
+        mo_detail_data['refund_rate'] = mo_detail_data['refund_rate'].apply(lambda x: self.percent_convert(x) if pd.notnull(x) else x)
         td_detail_data['refund_rate'] = td_detail_data['refund_rate'].apply(self.percent_convert)
         group_total_data['refund_rate'] = group_total_data['refund_rate'].apply(self.percent_convert)
 
