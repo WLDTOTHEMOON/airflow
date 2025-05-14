@@ -83,7 +83,7 @@ class PerformanceDaily(BaseDag):
         target_sql = f'''
             select
                 sum(target_final * 10000) final_target
-            from ods.ods_gmv_target ogt
+            from ods.ods_fs_gmv_target ofgt
             where month = '{date_interval['month']}'
         '''
 
@@ -129,7 +129,7 @@ class PerformanceDaily(BaseDag):
                select
                    anchor_name
                    ,predict_income_belong_org
-               from ads.ads_estimated_pnl aep
+               from ads.ads_ks_estimated_pnl akep 
                where order_date = '{date_interval['yes_ds']}'
            )ads on gmv.anchor_name = ads.anchor_name
            group by 1
@@ -205,7 +205,7 @@ class PerformanceDaily(BaseDag):
                 select
                   anchor
                   ,target_final * 10000 target_final
-                from ods.ods_gmv_target ogt
+                from ods.ods_fs_gmv_target ofgt
                 where month = '{date_interval['month']}'
             ) tar on mo.anchor_name	= tar.anchor
             left join (
@@ -268,7 +268,7 @@ class PerformanceDaily(BaseDag):
             (
                 select
                     sum(coalesce(target_final,0) * 10000) target_final
-                from ods.ods_gmv_target ogt
+                from ods.ods_fs_gmv_target ofgt 
                 where month = '{date_interval['month']}' and anchor = '刘海州'
             )tar
             order by
@@ -321,21 +321,21 @@ class PerformanceDaily(BaseDag):
                        select
                            distinct anchor_name account_name
                            ,other_commission_belong
-                       from dim.dim_ks_anchor_info dkai
+                       from dim.dim_ks_account_info dkai
                        where line = '直播电商' or line = '其它'
                    ) tar
                    left join(
                            select
                          anchor
                          ,target_final * 10000 target_final
-                       from ods.ods_gmv_target ogt
+                       from ods.ods_fs_gmv_target ofgt
                        where month = '{date_interval['month']}' and anchor != '刘海州'
                    ) tg on tar.account_name = tg.anchor
                    left join (
                        select
                            anchor_name
                            ,sum(final_gmv) final_gmv
-                       from dws.dws_ks_ec_2hourly dkeh
+                       from dws.dws_ks_big_tbl dkbt 
                        where order_date between '{date_interval['month_start_ds']}' and '{date_interval['yes_ds']}'
                        group by
                            anchor_name
@@ -355,13 +355,27 @@ class PerformanceDaily(BaseDag):
                            select
                                '切片' project
                                ,sum(final_gmv) final_gmv
-                           from dws.dws_ks_slice_daily dksd
-                           where order_date between '{date_interval['month_start_ds']}' and '{date_interval['yes_ds']}'
+                           from (
+                                select 
+                                    final_gmv
+                                from dws.dws_ks_slice_slicer dkss 
+                                where order_date between '{date_interval['month_start_ds']}' and '{date_interval['yes_ds']}'
+                                union all
+                                select
+                                    final_gmv
+                                from dws.dws_ks_slice_recreation dksr 
+                                where order_date between '{date_interval['month_start_ds']}' and '{date_interval['yes_ds']}'
+                                union all
+                                select 
+                                    final_gmv
+                                from dws.dws_ks_slice_mcn dksm
+                                where order_date between '{date_interval['month_start_ds']}' and '{date_interval['yes_ds']}'
+                           ) slice
                        )gmv,
                        (
                            select
                                sum(target_final * 10000) target_final
-                           from ods.ods_gmv_target ogt
+                           from ods.ods_fs_gmv_target ofgt 
                            where month = '{date_interval['month']}' and anchor = '刘海州'
                        )tar)
                    ) lst

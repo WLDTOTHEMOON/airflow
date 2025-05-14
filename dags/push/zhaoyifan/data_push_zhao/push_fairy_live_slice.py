@@ -141,7 +141,7 @@ class FairyLiveSlice(BaseDag):
                             item_id
                             ,item_title
                             ,row_number() over(partition by item_id order by update_at desc) rn
-                        from dws.dws_ks_slice_daily dksd 
+                        from ({merge_sql}) slice
                     ) src 
                     where rn = 1 
                 ) item on tmp.item_id = item.item_id

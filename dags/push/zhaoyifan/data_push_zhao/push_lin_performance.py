@@ -27,7 +27,7 @@ class LinPerformance(BaseDag):
                     ,sum(final_gmv) final_gmv 
                     ,sum(final_gmv) /  sum(origin_gmv) final_rate
                     ,sum(coalesce(estimated_income,0)) + sum(coalesce(estimated_service_income,0)) commission_income
-                from dws.dws_ks_ec_2hourly dkeh   
+                from dws.dws_ks_big_tbl dkbt   
                 where order_date  = '{date_interval['yes_ds']}'
                     and anchor_name = '林一泽'
        '''
@@ -46,14 +46,14 @@ class LinPerformance(BaseDag):
                     sum(origin_gmv) origin_gmv 
                     ,sum(final_gmv) final_gmv 
                     ,sum(coalesce(estimated_income,0)) + sum(coalesce(estimated_service_income,0)) commission_income
-                from dws.dws_ks_ec_2hourly dkeh  
+                from dws.dws_ks_big_tbl dkbt
                 where order_date between '{date_interval['month_start_ds']}' and '{date_interval['yes_ds']}'
                     and anchor_name = '林一泽'
             ) gmv,
             (
                 select 
                     sum(target_final * 10000) target_final
-                from ods.ods_gmv_target ogt 
+                from ods.ods_fs_gmv_target ofgt
                 where month= '{date_interval['month']}'
                     and anchor = '林一泽'
             ) tar 
@@ -74,7 +74,7 @@ class LinPerformance(BaseDag):
                 ,sum(final_gmv) / sum(origin_gmv) final_rate
                 ,sum(coalesce(estimated_income,0) + coalesce(estimated_service_income,0)) commission_income
                 ,sum(coalesce(estimated_income,0) + coalesce(estimated_service_income,0)) / sum(final_gmv) commission_rate
-            from dws.dws_ks_ec_2hourly dkeh 
+            from dws.dws_ks_big_tbl dkbt 
             where order_date between '{date_interval['month_start_ds']}' and '{date_interval['yes_ds']}'
                 and anchor_name = '林一泽'
             group by 
@@ -113,7 +113,7 @@ class LinPerformance(BaseDag):
                 ,sum(final_gmv) / sum(origin_gmv) final_rate
                 ,sum(coalesce(estimated_income,0) + coalesce(estimated_service_income,0)) commission_income
                 ,sum(coalesce(estimated_income,0) + coalesce(estimated_service_income,0)) / sum(final_gmv) commission_rate
-            from dws.dws_ks_ec_2hourly dkeh 
+            from dws.dws_ks_big_tbl dkbt
             where  order_date  = '{date_interval['yes_ds']}'
                 and anchor_name = '林一泽'
             group by 

@@ -27,7 +27,7 @@ class MoPerformance(BaseDag):
                     ,sum(final_gmv) final_gmv 
                     ,sum(final_gmv) /  sum(origin_gmv) final_rate
                     ,sum(coalesce(estimated_income,0)) + sum(coalesce(estimated_service_income,0)) commission_income
-                from dws.dws_ks_ec_2hourly dkeh   
+                from dws.dws_ks_big_tbl dkbt   
                where order_date  = '{date_interval['yes_ds']}'
                    and anchor_name = '墨晨夏'
        '''
@@ -46,14 +46,14 @@ class MoPerformance(BaseDag):
                     sum(origin_gmv) origin_gmv 
                     ,sum(final_gmv) final_gmv 
                     ,sum(coalesce(estimated_income,0)) + sum(coalesce(estimated_service_income,0)) commission_income
-                from dws.dws_ks_ec_2hourly dkeh  
+                from dws.dws_ks_big_tbl dkbt  
                 where order_date between '{date_interval['month_start_ds']}' and '{date_interval['yes_ds']}'
                     and anchor_name = '墨晨夏'
             ) gmv,
             (
                 select 
                     sum(target_final * 10000) target_final
-                from ods.ods_gmv_target ogt 
+                from ods.ods_fs_gmv_target ofgt 
                 where month= '{date_interval['month']}'
                     and anchor = '墨晨夏'
             ) tar 
@@ -78,11 +78,11 @@ class MoPerformance(BaseDag):
                 ,sum(origin_order_number) - sum(final_order_number) return_order_number
                 ,sum(origin_gmv) - sum(final_gmv) return_gmv
                 ,1 - sum(final_order_number) / sum(origin_order_number) return_rate
-            from dws.dws_ks_ec_2hourly dkeh 
+            from dws.dws_ks_big_tbl dkbt
             where account_id in (
                 select 
                     account_id
-                from dim.dim_ks_anchor_info dkai 
+                from dim.dim_ks_account_info dkai 
                 where anchor_name = '墨晨夏'
             ) and order_date between '{date_interval['month_start_ds']}' and '{date_interval['yes_ds']}'
             group by 
@@ -127,11 +127,11 @@ class MoPerformance(BaseDag):
                 ,sum(origin_order_number) - sum(final_order_number) return_order_number
                 ,sum(origin_gmv) - sum(final_gmv) return_gmv
                 ,1 - sum(final_order_number) / sum(origin_order_number) return_rate
-            from dws.dws_ks_ec_2hourly dkeh 
+            from dws.dws_ks_big_tbl dkbt 
             where account_id in (
                 select 
                     account_id
-                from dim.dim_ks_anchor_info dkai 
+                from dim.dim_ks_account_info dkai
                 where anchor_name = '墨晨夏'
             ) and order_date  = '{date_interval['yes_ds']}'
             group by 
