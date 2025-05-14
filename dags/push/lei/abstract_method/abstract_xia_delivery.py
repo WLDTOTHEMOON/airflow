@@ -20,7 +20,7 @@ class AbstractXiaDelivery(AbstractDagTask):
                 'start_date': pendulum.datetime(2023, 1, 1)
             },
             tags=['push', 'xia_delivery'],
-            robot_url=Variable.get('TEST'),
+            robot_url=Variable.get('KAKASHI'),
         )
         self.card_id: str = 'AAqRLrhJaJ8IV'
 

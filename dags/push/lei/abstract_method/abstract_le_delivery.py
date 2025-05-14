@@ -19,7 +19,7 @@ class AbstractLeDelivery(AbstractDagTask):
                 'start_date': pendulum.datetime(2023, 1, 1)
             },
             tags=['push', 'le_delivery'],
-            robot_url=Variable.get('TEST'),
+            robot_url=Variable.get('YAMAMOTO'),
         )
         self.card_id: str = 'AAqRLrhJaJ8IV'
 

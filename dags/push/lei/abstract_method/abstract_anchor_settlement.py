@@ -21,7 +21,8 @@ class AbstractAnchorSettlement(AbstractDagTask):
                 'provide_context': True
             },
             tags=['push', 'anchor_settlement'],
-            robot_url=Variable.get('Pain'),
+            robot_url=Variable.get('Pain')
+            # robot_url=Variable.get('TEST')
         )
         self.card_id: str = 'AAqRPrHrP2wKb'
 
@@ -29,6 +30,7 @@ class AbstractAnchorSettlement(AbstractDagTask):
         logger.info(f'获取数据')
         start_time = kwargs['data_interval_end'].in_tz('Asia/Shanghai')
         begin_time = start_time.subtract(days=1).strftime('%Y-%m-01 00:00:00')
+
         end_time = start_time.subtract(days=1).strftime('%Y-%m-%d 23:59:59')
         sql = """
              select
@@ -212,6 +214,29 @@ class AbstractAnchorSettlement(AbstractDagTask):
             )tol
             group by
                     1
+            union all
+            select
+                date(settlement_success_time) settlement_success_date
+                ,sum(coalesce(mcn.settlement_amount,0)) estimated_service_income 
+                ,0 estimated_income
+                ,sum(coalesce(mcn.settlement_amount,0)) tol_income 
+            from dwd.dwd_ks_cps_order dkco
+            left join(
+                select
+                    o_id
+                    ,settlement_amount 
+                from ods.ods_crawler_mcn_order ocmo 
+            ) mcn on dkco.o_id = mcn.o_id
+            where account_id in(
+                select
+                    account_id
+                from dim.dim_ks_account_info dkai 
+                where anchor_name = '樊欣羽'
+            )
+                and settlement_success_time between %(begin_time)s and %(end_time)s
+                and cps_order_status = '已结算'
+            group by
+                1
         """
         slice_df = pd.read_sql(slice_sql, self.engine, params={'begin_time': begin_time, 'end_time': end_time})
         return {

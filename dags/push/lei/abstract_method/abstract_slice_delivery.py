@@ -21,7 +21,7 @@ class AbstractSliceDelivery(AbstractDagTask):
                 'provide_context': True
             },
             tags=['push', 'slice_delivery'],
-            robot_url=Variable.get('TEST')
+            robot_url=Variable.get('MiyamuraIzumi')
         )
         self.card_id: str = 'AAqRLrhJaJ8IV'
 
