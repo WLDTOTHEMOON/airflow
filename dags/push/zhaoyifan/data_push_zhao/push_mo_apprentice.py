@@ -14,7 +14,7 @@ class MoApprentice(BaseDag):
     def __init__(self):
         super().__init__(
             dag_id='push_mo_apprentice',
-            robot_url=Variable.get('TEST'),
+            robot_url=Variable.get('PIKACHU'),
             tags=['push', 'mo_apprentice'],
             schedule='0 5 * * *'
         )
