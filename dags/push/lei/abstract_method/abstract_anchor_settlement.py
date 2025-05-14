@@ -21,7 +21,7 @@ class AbstractAnchorSettlement(AbstractDagTask):
                 'provide_context': True
             },
             tags=['push', 'anchor_settlement'],
-            robot_url=Variable.get('TEST'),
+            robot_url=Variable.get('Pain'),
         )
         self.card_id: str = 'AAqRPrHrP2wKb'
 
