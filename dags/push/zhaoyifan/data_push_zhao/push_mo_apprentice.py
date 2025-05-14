@@ -35,11 +35,11 @@ class MoApprentice(BaseDag):
                 ,coalesce(estimated_income,0) estimated_income 
                 ,coalesce(estimated_service_income,0) estimated_service_income 
                 ,coalesce(estimated_income,0) + coalesce(estimated_service_income,0) commission_income
-            from dws.dws_ks_ec_2hourly dkeh 
+            from dws.dws_ks_big_tbl dkbt 
             where anchor_name in (
                 select 
                     anchor_name 
-                from dim.dim_ks_anchor_info dkai 
+                from dim.dim_ks_account_info dkai 
                 where other_commission_belong = '墨晨夏'
             ) and order_date between '{date_interval['month_start_ds']}' and '{date_interval['yes_ds']}'
         '''
@@ -49,11 +49,11 @@ class MoApprentice(BaseDag):
         target_sql = f'''
             select 
                 sum(target_final * 10000) target_final 
-            from ods.ods_gmv_target ogt 
+            from ods.ods_fs_gmv_target ofgt
             where anchor in (
                 select 
                     anchor_name 
-                from dim.dim_ks_anchor_info dkai 
+                from dim.dim_ks_account_info dkai
                 where other_commission_belong = '墨晨夏'
             ) and month = '{date_interval['month']}'
         '''

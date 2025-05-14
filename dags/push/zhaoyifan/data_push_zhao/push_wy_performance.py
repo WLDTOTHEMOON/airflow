@@ -27,12 +27,12 @@ class WyPerformance(BaseDag):
                 ,sum(final_gmv) final_gmv 
                 ,sum(final_gmv) / sum(origin_gmv) final_rate
                 ,sum(coalesce(estimated_income,0)) + sum(coalesce(estimated_service_income,0)) commission_income
-            from dws.dws_ks_ec_2hourly dkeh 
+            from dws.dws_ks_big_tbl dkbt  
             where order_date = '{date_interval['yes_ds']}'
                 and anchor_name in (
                         select 
                             distinct anchor_name  
-                        from dim.dim_ks_anchor_info dkai 
+                        from dim.dim_ks_account_info dkai
                         where group_leader = '吴月'
                             and anchor_name not in ('夜郎','梦洋','金秀妍','小鲁班','李芷墨','葛珊')
                     )
@@ -53,12 +53,12 @@ class WyPerformance(BaseDag):
                    ,sum(final_gmv) final_gmv 
                    ,sum(final_gmv) / sum(origin_gmv) final_rate
                    ,sum(coalesce(estimated_income,0)) + sum(coalesce(estimated_service_income,0)) commission_income
-               from dws.dws_ks_ec_2hourly dkeh 
+               from dws.dws_ks_big_tbl dkbt
                where order_date between '{date_interval['month_start_ds']}' and '{date_interval['yes_ds']}'
                    and anchor_name  in (
                            select 
                            distinct anchor_name  
-                       from dim.dim_ks_anchor_info dkai 
+                       from dim.dim_ks_account_info dkai
                        where group_leader = '吴月'
                         and anchor_name not in ('夜郎','梦洋','金秀妍','小鲁班','李芷墨','葛珊')
                    )
@@ -66,12 +66,12 @@ class WyPerformance(BaseDag):
            (
                select 
                    sum(target_final * 10000) target_final
-               from ods.ods_gmv_target ogt 
+               from ods.ods_fs_gmv_target ofgt 
                where month = '{date_interval['month']}'
                    and anchor in (
                            select 
                                distinct anchor_name 
-                           from dim.dim_ks_anchor_info dkai 
+                           from dim.dim_ks_account_info dkai 
                            where group_leader = '吴月'
                        )	
            ) target
@@ -97,12 +97,12 @@ class WyPerformance(BaseDag):
                     ,sum(origin_gmv) origin_gmv 
                     ,sum(final_gmv) final_gmv 
                     ,sum(coalesce(estimated_income,0)) + sum(coalesce(estimated_service_income,0)) commission_income
-                from dws.dws_ks_ec_2hourly dkeh 
+                from dws.dws_ks_big_tbl dkbt
                 where order_date between '{date_interval['month_start_ds']}' and '{date_interval['yes_ds']}'
                     and anchor_name in (
                         select 
                             distinct anchor_name 
-                        from dim.dim_ks_anchor_info dkai 
+                        from dim.dim_ks_account_info dkai
                         where group_leader = '吴月'
                     )
                 group by 1,2,3
@@ -150,12 +150,12 @@ class WyPerformance(BaseDag):
                         ,anchor_name
                         ,order_date
                         ,sum(final_gmv) final_gmv 
-                    from dws.dws_ks_ec_2hourly dkeh 
+                    from dws.dws_ks_big_tbl dkbt
                     where order_date between '{date_interval['month_start_ds']}' and '{date_interval['yes_ds']}'
                         and anchor_name  in (
                             select 
                                 distinct anchor_name  
-                            from dim.dim_ks_anchor_info dkai 
+                            from dim.dim_ks_account_info dkai
                             where group_leader = '吴月'
                         )
                     group by 1,2,3
@@ -172,12 +172,12 @@ class WyPerformance(BaseDag):
               select 
                    anchor
                   ,sum(target_final * 10000) target_final
-              from ods.ods_gmv_target ogt 
+              from ods.ods_fs_gmv_target ofgt 
               where month = '{date_interval['month']}'
                   and anchor in (
                       select 
                           distinct anchor_name 
-                      from dim.dim_ks_anchor_info dkai 
+                      from dim.dim_ks_account_info dkai
                       where group_leader = '吴月'
                   )	
               group by 1

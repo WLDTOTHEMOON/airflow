@@ -29,7 +29,7 @@ class LeMoItem(BaseDag):
                     ,product_submit_at
                     ,origin_gmv 
                     ,final_gmv 
-            from dws.dws_ks_ec_2hourly dkeh 
+            from dws.dws_ks_big_tbl dkbt  
             where order_date = '{date_interval['yes_ds']}'
                     and anchor_name = '乐总'
 --                     and (first_sell_at < product_submit_at or bd_name is null)
@@ -51,7 +51,7 @@ class LeMoItem(BaseDag):
                             ,product_submit_at
                             ,origin_gmv 
                             ,final_gmv 
-                    from dws.dws_ks_ec_2hourly dkeh 
+                    from dws.dws_ks_big_tbl dkbt  
                     where order_date = '{date_interval['yes_ds']}'
                             and anchor_name = '墨晨夏'
                             and account_id = '2884165591'
