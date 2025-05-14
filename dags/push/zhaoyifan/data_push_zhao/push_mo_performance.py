@@ -14,7 +14,7 @@ class MoPerformance(BaseDag):
     def __init__(self):
         super().__init__(
             dag_id='push_mo_performance',
-            robot_url=Variable.get('TEST'),
+            robot_url=Variable.get('KILLUA'),
             tags=['push', 'mo_performance'],
             schedule='0 5 * * *'
         )

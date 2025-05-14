@@ -14,7 +14,7 @@ class LinPerformance(BaseDag):
     def __init__(self):
         super().__init__(
             dag_id='push_lin_performance',
-            robot_url=Variable.get('TEST'),
+            robot_url=Variable.get('KAITO'),
             tags=['push', 'lin_performance'],
             schedule='0 5 * * *'
         )
