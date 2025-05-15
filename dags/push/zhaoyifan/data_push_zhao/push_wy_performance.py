@@ -122,6 +122,9 @@ class WyPerformance(BaseDag):
         anchor_df = pd.read_sql(anchor_sql, self.engine)
         yes_anchor_df = anchor_df[anchor_df.order_date.astype(str) >= date_interval['yes_ds']]
         yes_anchor_df['order_date'] = yes_anchor_df['order_date'].astype('str')
+        yes_anchor_df['origin_gmv'] = (yes_anchor_df['origin_gmv'] / 10000).round(1)
+        yes_anchor_df['final_gmv'] = (yes_anchor_df['final_gmv'] / 10000).round(1)
+        yes_anchor_df['commission_income'] = (yes_anchor_df['commission_income'] / 10000).round(1)
 
         month_anchor_df = anchor_df
         month_anchor_df['order_date'] = pd.to_datetime(month_anchor_df['order_date'])
@@ -129,6 +132,9 @@ class WyPerformance(BaseDag):
         month_anchor_df = month_anchor_df.groupby(['month', 'anchor_name']).sum(numeric_only=True).reset_index()
         month_anchor_df = month_anchor_df.sort_values('final_gmv', ascending=False)
         month_anchor_df['final_rate'] = month_anchor_df.final_gmv / month_anchor_df.origin_gmv
+        month_anchor_df['origin_gmv'] = (month_anchor_df['origin_gmv'] / 10000).round(1)
+        month_anchor_df['final_gmv'] = (month_anchor_df['final_gmv'] / 10000).round(1)
+        month_anchor_df['commission_income'] = (month_anchor_df['commission_income'] / 10000).round(1)
 
         anchor_target_sql = f'''
             select 
@@ -139,7 +145,10 @@ class WyPerformance(BaseDag):
                     end anchor_name
                     ,sum(final_gmv) final_gmv
                     ,sum(coalesce(target_final,0)) target_final
-                    ,sum(final_gmv) / sum(coalesce(target_final,0)) target_success_rate
+                    ,case
+                        when sum(coalesce(target_final,0)) = 0 then 0
+                        else sum(final_gmv) / sum(coalesce(target_final,0)) 
+                    end target_success_rate
             from (
                 select 
                     coalesce(cor.actual_anchor_name, gmv.anchor_name) anchor_name
@@ -186,6 +195,8 @@ class WyPerformance(BaseDag):
             order by final_gmv desc
         '''
         month_anchor_target_df = pd.read_sql(anchor_target_sql, self.engine)
+        month_anchor_target_df['final_gmv'] = (month_anchor_target_df['final_gmv'] / 10000).round(1)
+        month_anchor_target_df['target_final'] = (month_anchor_target_df['target_final'] / 10000).round(1)
 
         return {
             'yes_tol_df': yes_tol_df,
@@ -327,10 +338,10 @@ class WyPerformance(BaseDag):
         yes_anchor_df.rename(columns={
             'order_date': '卖货日期',
             'anchor_name': '主播',
-            'origin_gmv': '支付GMV',
-            'final_gmv': '结算GMV',
+            'origin_gmv': '支付GMV(万)',
+            'final_gmv': '结算GMV(万)',
             'final_rate': '结算率',
-            'commission_income': '佣金'
+            'commission_income': '佣金(万)'
         }, inplace=True)
         yes_style_dict = {
             'A1:' + col_convert(yes_anchor_df.shape[1]) + '1': {
@@ -348,10 +359,10 @@ class WyPerformance(BaseDag):
         month_anchor_df.rename(columns={
             'month': '月份',
             'anchor_name': '主播',
-            'origin_gmv': '支付GMV',
-            'final_gmv': '结算GMV',
+            'origin_gmv': '支付GMV(万)',
+            'final_gmv': '结算GMV(万)',
             'final_rate': '结算率',
-            'commission_income': '佣金'
+            'commission_income': '佣金(万)'
         }, inplace=True)
         month_style_dict = {
             'A1:' + col_convert(month_anchor_df.shape[1]) + '1': {
@@ -369,8 +380,8 @@ class WyPerformance(BaseDag):
         month_anchor_target_df.rename(columns={
             'month': '月份',
             'anchor_name': '主播',
-            'final_gmv': '结算GMV',
-            'target_final': '结算目标',
+            'final_gmv': '结算GMV(万)',
+            'target_final': '结算目标(万)',
             'target_success_rate': '完成率'
         }, inplace=True)
         target_style_dict = {
