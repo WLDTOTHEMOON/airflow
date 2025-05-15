@@ -12,7 +12,7 @@ class LeMoItem(BaseDag):
         super().__init__(
             dag_id='push_le_mo_item',
             tags=['push', 'item'],
-            robot_url=Variable.get('TEST'),
+            robot_url=Variable.get('KAGOME'),
             schedule='0 7 * * *'
         )
         self.card_id = 'AAq4uuRPgclE1'

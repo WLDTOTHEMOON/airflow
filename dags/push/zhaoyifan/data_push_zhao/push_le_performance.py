@@ -14,7 +14,7 @@ class LePerformance(BaseDag):
     def __init__(self):
         super().__init__(
             dag_id='push_le_performance',
-            robot_url=Variable.get('TEST'),
+            robot_url=Variable.get('RYOMA'),
             tags=['push', 'le_performance'],
             schedule='0 5 * * *'
         )
