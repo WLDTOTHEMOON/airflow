@@ -22,7 +22,7 @@ class AbstractZnPerformance(AbstractDagTask):
                 'provide_context': True
             },
             tags=['push', 'zn_performance'],
-            robot_url=Variable.get('NoharaRin'),
+            robot_url=Variable.get('NoharaRin')
         )
         self.card_id: str = 'AAq4NniWFT389'
 
@@ -291,16 +291,16 @@ class AbstractZnPerformance(AbstractDagTask):
             'title': '曾楠业绩数据',
             'sheet_title': title[0],
             'sheet_url': url,
-            'yes_origin_gmv': str(yesterday_total_data['支付GMV'][0]),
-            'yes_final_gmv': str(yesterday_total_data['结算GMV'][0]),
+            'yes_origin_gmv': str(round(yesterday_total_data['支付GMV'][0]/10000, 2)),
+            'yes_final_gmv': str(round(yesterday_total_data['结算GMV'][0]/10000, 2)),
             'yes_return_rate': str(yesterday_total_data['结算率'][0]),
-            'yes_commission_income': str(yesterday_total_data['佣金'][0]),
-            'month_origin_gmv': str(month_total_data['支付GMV'][0]),
-            'month_final_gmv': str(month_total_data['结算GMV'][0]),
+            'yes_commission_income': str(round(yesterday_total_data['佣金'][0]/10000, 2)),
+            'month_origin_gmv': str(round(month_total_data['支付GMV'][0]/10000, 2)),
+            'month_final_gmv': str(round(month_total_data['结算GMV'][0]/10000, 2)),
             'month_return_rate': str(month_total_data['结算率'][0]),
-            'month_target': str(month_total_data['target'][0]),
+            'month_target': str(round(month_total_data['target'][0]/10000, 2)),
             'month_target_rate': str(month_total_data['target_rate'][0]),
-            'month_commission_income': str(month_total_data['佣金'][0]),
+            'month_commission_income': str(round(month_total_data['佣金'][0]/10000, 2)),
             'yes_day': str(title[1]),
             'time_score': str(title[2])
         }
