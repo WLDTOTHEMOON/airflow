@@ -21,7 +21,7 @@ class AbstractFinalData(AbstractDagTask):
                 'provide_context': True
             },
             tags=['push', 'final_data'],
-            robot_url=Variable.get('TEST'),
+            robot_url=Variable.get('HINATA'),
         )
         self.card_id: str = 'AAqRPrHrP2wKb'
 

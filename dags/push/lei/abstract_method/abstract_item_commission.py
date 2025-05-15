@@ -20,7 +20,7 @@ class AbstractItemCommission(AbstractDagTask):
                 'start_date': pendulum.datetime(2023, 1, 1),
             },
             tags=['push', 'item_commission'],
-            robot_url=Variable.get('TEST')
+            robot_url=Variable.get('NAMIKAZE')
         )
         self.card_id = 'AAqRPrHrP2wKb'
 

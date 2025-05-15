@@ -21,7 +21,7 @@ class AbstractTdCover(AbstractDagTask):
                 'provide_context': True
             },
             tags=['push', 'td_cover'],
-            robot_url=Variable.get('TEST'),
+            robot_url=Variable.get('JIRAIYA'),
         )
         self.card_id: str = 'AAqRPrHrP2wKb'
 
