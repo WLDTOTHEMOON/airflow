@@ -14,7 +14,7 @@ class AbstractZnPerformance(AbstractDagTask):
     def __init__(self):
         super().__init__(
             dag_id='push_zn_performance',
-            schedule='0 7 * * *',
+            schedule='0 5 * * *',
             default_args=
             {
                 'owner': 'Lei Jiangling',
