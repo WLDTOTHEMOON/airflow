@@ -20,7 +20,7 @@ class AbstractCwsData(AbstractDagTask):
                 'start_date': pendulum.datetime(2023, 1, 1)
             },
             tags=['push', 'cw_data'],
-            robot_url=Variable.get('TEST')
+            robot_url=Variable.get('NARUTO')
         )
         self.card_id: str = 'AAqRPrHrP2wKb'
 

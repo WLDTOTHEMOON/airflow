@@ -21,7 +21,7 @@ class AbstractCommissionVerify(AbstractDagTask):
                 'provide_context': True
             },
             tags=['push', 'commission_verify'],
-            robot_url=Variable.get('TEST'),
+            robot_url=Variable.get('MIKASA'),
         )
         self.card_id: str = 'AAq4cjW2TgIBl'
 

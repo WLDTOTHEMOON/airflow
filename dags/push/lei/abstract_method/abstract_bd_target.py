@@ -21,7 +21,7 @@ class AbstractBdTarget(AbstractDagTask):
                 'provide_context': True
             },
             tags=['push', 'bd_target'],
-            robot_url=Variable.get('TEST'),
+            robot_url=Variable.get('MIKASA'),
         )
         self.card_id: str = 'AAq4cDfHHntNt'
 
