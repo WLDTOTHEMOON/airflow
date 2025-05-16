@@ -403,7 +403,7 @@ class WyPerformance(BaseDag):
         res4 = {**card['card_4']}
         self.feishu_robot.send_msg_card(data=res1, card_id=self.card_id[0], version_name='1.0.0')
         self.feishu_robot.send_msg_card(data=res2, card_id=self.card_id[1], version_name='1.0.1')
-        self.feishu_robot.send_msg_card(data=res3, card_id=self.card_id[2], version_name='1.0.0')
+        self.feishu_robot.send_msg_card(data=res3, card_id=self.card_id[2], version_name='1.0.1')
         self.feishu_robot.send_msg_card(data=res4, card_id=self.card_id[3], version_name='1.0.1')
         # self.feishu_robot.send_msg_card(data=res, card_id=self.card_id, version_name='1.0.3')
 
