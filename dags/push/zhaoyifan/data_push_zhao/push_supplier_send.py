@@ -12,7 +12,7 @@ class SupplierSend(BaseDag):
         super().__init__(
             dag_id='push_supplier_send',
             tags=['push', 'supplier_send'],
-            robot_url=Variable.get('TEST'),
+            robot_url=Variable.get('GATOMON'),
             schedule='0 3 * * 1'
         )
         self.card_id = 'AAq4HQvobYgca'

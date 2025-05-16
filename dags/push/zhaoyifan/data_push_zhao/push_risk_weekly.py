@@ -12,7 +12,7 @@ class RiskWeekly(BaseDag):
         super().__init__(
             dag_id='push_risk_weekly',
             tags=['push', 'risk_weekly'],
-            robot_url=Variable.get('TEST'),
+            robot_url=Variable.get('TEZUKA'),
             schedule='0 21 * * 7'
         )
         self.card_id = 'AAq4w6tLjK0Iy'

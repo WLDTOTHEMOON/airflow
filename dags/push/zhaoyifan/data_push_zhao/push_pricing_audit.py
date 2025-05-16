@@ -12,7 +12,7 @@ class PricingAudit(BaseDag):
         super().__init__(
             dag_id='push_pricing_audit',
             tags=['push', 'pricing_audit'],
-            robot_url=Variable.get('TEST'),
+            robot_url=Variable.get('YINGGOU'),
             schedule='0 21 * * 6'
         )
         self.card_id = 'AAq4mlhtYmLDs'

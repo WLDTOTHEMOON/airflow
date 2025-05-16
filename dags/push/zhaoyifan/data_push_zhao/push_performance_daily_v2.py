@@ -19,6 +19,12 @@ class PerformanceDaily(BaseDag):
         self.card_id = ['AAq4Y3orMfVcg', 'AAq4WshUF943P', 'AAq4WshUF943P', 'AAq4WslajpK40']
 
     def fetch_data_logic(self, date_interval: Dict[str, Any]) -> Dict[str, Any]:
+        # date_interval = {
+        #     "yes_ds": date_interval['yes_ds'],
+        #     "month_start_ds": date_interval['month_start_ds'],
+        #     "month": '2025-06'
+        # }
+
         ec_month_detail_sql = f'''
             select 
                 bt.order_date
@@ -96,34 +102,106 @@ class PerformanceDaily(BaseDag):
         ec_yes_df = pd.DataFrame(ec_yes_df.sum(numeric_only=True)).T
         ec_yes_df['final_rate'] = ec_yes_df['final_gmv'] / ec_yes_df['origin_gmv']
 
+        # leader_day_pf_sql = f'''
+        #     select
+        #        gmv.anchor_name project
+        #        ,sum(origin_gmv) origin_gmv
+        #        ,sum(final_gmv) final_gmv
+        #        ,sum(final_gmv) / sum(origin_gmv) final_rate
+        #        ,sum(coalesce(predict_income_belong_org,0)) commission_income
+        #    from (
+        #        select
+        #            anchor_name
+        #            ,sum(origin_gmv) origin_gmv
+        #            ,sum(final_gmv) final_gmv
+        #        from dws.dws_ks_big_tbl dkbt
+        #        where order_date  = '{date_interval['yes_ds']}'
+        #        group by
+        #            anchor_name
+        #    )gmv
+        #    left join (
+        #        select
+        #            anchor_name
+        #            ,predict_income_belong_org
+        #        from ads.ads_ks_estimated_pnl akep
+        #        where order_date = '{date_interval['yes_ds']}'
+        #    )ads on gmv.anchor_name = ads.anchor_name
+        #    group by 1
+        #    union all
+        #    select
+        #       '切片' project
+        #       ,sum(origin_gmv) origin_gmv
+        #       ,sum(final_gmv) final_gmv
+        #       ,sum(final_gmv) / sum(origin_gmv) final_rate
+        #       ,sum(tol_income) tol_income
+        #    from (
+        #         select
+        #             order_date
+        #             ,origin_gmv
+        #             ,final_gmv
+        #             ,coalesce(estimated_income,0) + coalesce(estimated_service_income,0) tol_income
+        #         from dws.dws_ks_slice_slicer dkss
+        #         where order_date  = '{date_interval['yes_ds']}'
+        #         union all
+        #         select
+        #             order_date
+        #             ,origin_gmv
+        #             ,final_gmv
+        #             ,coalesce(estimated_income,0) + coalesce(estimated_service_income,0) tol_income
+        #         from dws.dws_ks_slice_recreation dksr
+        #         where order_date  = '{date_interval['yes_ds']}'
+        #         union all
+        #         select
+        #             order_date
+        #             ,origin_gmv
+        #             ,final_gmv
+        #             ,coalesce(estimated_income,0) + coalesce(estimated_service_income,0) tol_income
+        #         from dws.dws_ks_slice_mcn dksm
+        #         where order_date  = '{date_interval['yes_ds']}'
+        #    ) slice
+        #    group by 1
+        #    order by
+        #      case project
+        #          when '乐总' then 1
+        #          when '墨晨夏' then 2
+        #          when '切片' then 3
+        #          else 4
+        #      end
+        #      ,origin_gmv desc
+        #   '''
         leader_day_pf_sql = f'''
             select
-               gmv.anchor_name project
+				gmv.order_date
+               ,gmv.anchor_name project
                ,sum(origin_gmv) origin_gmv
                ,sum(final_gmv) final_gmv
                ,sum(final_gmv) / sum(origin_gmv) final_rate
                ,sum(coalesce(predict_income_belong_org,0)) commission_income
            from (
                select
-                   anchor_name
+               		order_date
+                   ,anchor_name
                    ,sum(origin_gmv) origin_gmv
                    ,sum(final_gmv) final_gmv
                from dws.dws_ks_big_tbl dkbt 
-               where order_date  = '{date_interval['yes_ds']}'
+               where order_date  between '{date_interval['month_start_ds']}' and '{date_interval['yes_ds']}'
                group by
-                   anchor_name
+                   1,2
            )gmv
            left join (
                select
-                   anchor_name
-                   ,predict_income_belong_org
+               		order_date
+                   ,anchor_name
+                   ,sum(predict_income_belong_org) predict_income_belong_org
                from ads.ads_ks_estimated_pnl akep 
-               where order_date = '{date_interval['yes_ds']}'
-           )ads on gmv.anchor_name = ads.anchor_name
-           group by 1
+               where order_date between '{date_interval['month_start_ds']}' and '{date_interval['yes_ds']}'
+               group by 1,2
+           )ads on gmv.anchor_name = ads.anchor_name and gmv.order_date = ads.order_date
+           group by 1,2
            union all
            select 
-              '切片' project
+           	   order_date
+              ,'切片' project
               ,sum(origin_gmv) origin_gmv
               ,sum(final_gmv) final_gmv
               ,sum(final_gmv) / sum(origin_gmv) final_rate
@@ -135,7 +213,7 @@ class PerformanceDaily(BaseDag):
                     ,final_gmv
                     ,coalesce(estimated_income,0) + coalesce(estimated_service_income,0) tol_income
                 from dws.dws_ks_slice_slicer dkss 
-                where order_date  = '{date_interval['yes_ds']}'
+                where order_date  between '{date_interval['month_start_ds']}' and '{date_interval['yes_ds']}'
                 union all
                 select 
                     order_date 
@@ -143,7 +221,7 @@ class PerformanceDaily(BaseDag):
                     ,final_gmv
                     ,coalesce(estimated_income,0) + coalesce(estimated_service_income,0) tol_income
                 from dws.dws_ks_slice_recreation dksr 
-                where order_date  = '{date_interval['yes_ds']}'
+                where order_date  between '{date_interval['month_start_ds']}' and '{date_interval['yes_ds']}'
                 union all
                 select 
                     order_date 
@@ -151,102 +229,182 @@ class PerformanceDaily(BaseDag):
                     ,final_gmv
                     ,coalesce(estimated_income,0) + coalesce(estimated_service_income,0) tol_income
                 from dws.dws_ks_slice_mcn dksm
-                where order_date  = '{date_interval['yes_ds']}'
+                where order_date  between '{date_interval['month_start_ds']}' and '{date_interval['yes_ds']}'
            ) slice
-           group by 1
+           group by 1,2
            order by
-             case project
+           	  order_date
+             ,case project
                  when '乐总' then 1
                  when '墨晨夏' then 2
                  when '切片' then 3
                  else 4
              end
              ,origin_gmv desc
-          '''
+        '''
 
-        yes_tol_df = pd.read_sql(leader_day_pf_sql, self.engine)
+        tol_df = pd.read_sql(leader_day_pf_sql, self.engine)
+        yes_tol_df = tol_df[tol_df.order_date.astype(str) == date_interval['yes_ds']]
+        month_tol_df = tol_df[['project', 'origin_gmv', 'final_gmv', 'commission_income']]
+        month_tol_df = month_tol_df.groupby('project').sum().reset_index()
+        custom_order = {'乐总': 0, '墨晨夏': 1, '切片': 2}
+        month_tol_df['sort_key'] = month_tol_df['project'].map(custom_order)
+        month_tol_df = month_tol_df.sort_values(
+            ['sort_key', 'origin_gmv'], ascending=[True, False], na_position='last'
+        ).drop('sort_key', axis=1)
+        month_tol_df['final_rate'] = month_tol_df.final_gmv / month_tol_df.origin_gmv
 
+        # leader_month_target_sql = f'''
+        #     select
+        #      	  project
+        #      	  ,sum(origin_gmv) origin_gmv
+	    #           ,sum(final_gmv) final_gmv
+	    #           ,sum(final_gmv) / sum(origin_gmv) final_rate
+	    #           ,sum(target_final) target_final
+	    #           ,sum(final_gmv) / sum(target_final) target_success_rate
+	    #           ,sum(income) income
+	    #     from (
+	    #          select
+	    #              gmv.anchor_name project
+	    #             ,sum(origin_gmv) origin_gmv
+	    #             ,sum(final_gmv) final_gmv
+	    #             ,0 target_final
+	    #             ,sum(coalesce(predict_income_belong_org,0)) income
+        #         from  (
+        #             select
+        #                 anchor_name
+        #                 ,sum(origin_gmv) origin_gmv
+        #                 ,sum(final_gmv) final_gmv
+        #             from dws.dws_ks_big_tbl dkbt
+        #             where order_date between '{date_interval['month_start_ds']}' and '{date_interval['yes_ds']}'
+        #             group by
+        #                 anchor_name
+        #         ) gmv
+        #         left join (
+        #             select
+        #                 anchor_name
+        #                 ,sum(coalesce(predict_income_belong_org,0)) predict_income_belong_org
+        #             from ads.ads_ks_estimated_pnl
+        #             where order_date between '{date_interval['month_start_ds']}' and '{date_interval['yes_ds']}'
+        #             group by
+        #                 anchor_name
+        #         )ads on gmv.anchor_name = ads.anchor_name
+        #         group by 1,4
+        #         union all
+	    #         select
+	    #            anchor
+        #           ,0 origin_gmv
+        #           ,0 final_gmv
+        #           ,sum(target_final * 10000) target_final
+        #           ,0 income
+	    #         from ods.ods_fs_gmv_target ofgt
+	    #         where month = '{date_interval['month']}'
+	    #         	and anchor != '刘海州'
+	    #         group by 1,2,3,5
+        #     )src
+        #     group by 1
+        #     union all
+        #     select
+        #         '切片' project
+        #         ,origin_gmv
+        #         ,final_gmv
+        #         ,final_gmv / origin_gmv final_rate
+        #         ,coalesce(target_final,0) target_final
+        #         ,final_gmv  / coalesce(target_final,0) target_success_rate
+        #         ,tol_income income
+        #     from (
+        #         select
+        #             sum(origin_gmv) origin_gmv
+        #             ,sum(final_gmv) final_gmv
+        #             ,sum(tol_income) tol_income
+        #         from (
+        #             select
+        #                 origin_gmv
+        #                 ,final_gmv
+        #                 ,coalesce(estimated_income,0) + coalesce(estimated_service_income,0) tol_income
+        #             from dws.dws_ks_slice_slicer dkss
+        #             where order_date between '{date_interval['month_start_ds']}' and '{date_interval['yes_ds']}'
+        #             union all
+        #             select
+        #                 origin_gmv
+        #                 ,final_gmv
+        #                 ,coalesce(estimated_income,0) + coalesce(estimated_service_income,0) tol_income
+        #             from dws.dws_ks_slice_recreation dksr
+        #             where order_date between '{date_interval['month_start_ds']}' and '{date_interval['yes_ds']}'
+        #             union all
+        #             select
+        #                 origin_gmv
+        #                 ,final_gmv
+        #                 ,coalesce(estimated_income,0) + coalesce(estimated_service_income,0) tol_income
+        #             from dws.dws_ks_slice_mcn dksm
+        #             where order_date between '{date_interval['month_start_ds']}' and '{date_interval['yes_ds']}'
+        #         ) tol
+        #     ) slice,
+        #     (
+        #         select
+        #             sum(coalesce(target_final,0) * 10000) target_final
+        #         from ods.ods_fs_gmv_target ofgt
+        #         where month = '{date_interval['month']}' and anchor = '刘海州'
+        #     )tar
+        #     order by
+        #         case project
+        #           when '乐总' then 1
+        #           when '墨晨夏' then 2
+        #           when '切片' then 3
+        #           else 4
+        #         end
+        #         ,origin_gmv desc
+        # '''
         leader_month_target_sql = f'''
             select 
-             	  project
-             	  ,sum(origin_gmv) origin_gmv
-	              ,sum(final_gmv) final_gmv
-	              ,sum(final_gmv) / sum(origin_gmv) final_rate
-	              ,sum(target_final) target_final
-	              ,sum(final_gmv) / sum(target_final) target_success_rate
-	              ,sum(income) income
-	        from (
-	             select
-	                 gmv.anchor_name project
-	                ,sum(origin_gmv) origin_gmv
-	                ,sum(final_gmv) final_gmv
-	                ,0 target_final
-	                ,sum(coalesce(predict_income_belong_org,0)) income
-                from  (
-                    select
-                        anchor_name
-                        ,sum(origin_gmv) origin_gmv
-                        ,sum(final_gmv) final_gmv
-                    from dws.dws_ks_big_tbl dkbt
-                    where order_date between '{date_interval['month_start_ds']}' and '{date_interval['yes_ds']}'
-                    group by
-                        anchor_name
-                ) gmv 
-                left join (
-                    select
-                        anchor_name
-                        ,sum(coalesce(predict_income_belong_org,0)) predict_income_belong_org
-                    from ads.ads_ks_estimated_pnl
-                    where order_date between '{date_interval['month_start_ds']}' and '{date_interval['yes_ds']}'
-                    group by
-                        anchor_name
-                )ads on gmv.anchor_name = ads.anchor_name
-                group by 1,4
-                union all
-	            select 
-	               anchor
-                  ,0 origin_gmv
-                  ,0 final_gmv
-                  ,sum(target_final * 10000) target_final
-                  ,0 income
-	            from ods.ods_fs_gmv_target ofgt 
-	            where month = '{date_interval['month']}'
-	            	and anchor != '刘海州'
-	            group by 1,2,3,5
-            )src
+                   project
+                  ,sum(final_gmv) final_gmv
+                  ,sum(target_final) target_final
+                  ,sum(final_gmv) / sum(target_final) target_success_rate
+            from (
+                  select
+                     anchor_name project
+                    ,sum(final_gmv) final_gmv
+                    ,0 target_final
+                  from dws.dws_ks_big_tbl dkbt
+                  where order_date between '{date_interval['month_start_ds']}' and '{date_interval['yes_ds']}'
+                  group by
+                      1,3
+                  union all
+                  select 
+                     anchor project
+                    ,0 final_gmv
+                    ,sum(target_final * 10000) target_final
+                  from ods.ods_fs_gmv_target ofgt 
+                  where month = '{date_interval['month']}'
+                    and anchor != '刘海州'
+                  group by 1,2
+            ) src
             group by 1
             union all
             select
                 '切片' project
-                ,origin_gmv
                 ,final_gmv
-                ,final_gmv / origin_gmv final_rate
-                ,coalesce(target_final,0) target_final
-                ,final_gmv  / coalesce(target_final,0) target_success_rate
-                ,tol_income income
+                ,target_final
+                ,final_gmv  / target_final target_success_rate
             from (
                 select 
-                    sum(origin_gmv) origin_gmv
-                    ,sum(final_gmv) final_gmv
-                    ,sum(tol_income) tol_income
+                    sum(final_gmv) final_gmv
                 from (
                     select 
-                        origin_gmv
-                        ,final_gmv
+                        final_gmv
                         ,coalesce(estimated_income,0) + coalesce(estimated_service_income,0) tol_income
                     from dws.dws_ks_slice_slicer dkss 
                     where order_date between '{date_interval['month_start_ds']}' and '{date_interval['yes_ds']}'
                     union all
                     select 
-                        origin_gmv
-                        ,final_gmv
+                        final_gmv
                         ,coalesce(estimated_income,0) + coalesce(estimated_service_income,0) tol_income
                     from dws.dws_ks_slice_recreation dksr 
                     where order_date between '{date_interval['month_start_ds']}' and '{date_interval['yes_ds']}'
                     union all
                     select 
-                        origin_gmv
-                        ,final_gmv
+                        final_gmv
                         ,coalesce(estimated_income,0) + coalesce(estimated_service_income,0) tol_income
                     from dws.dws_ks_slice_mcn dksm
                     where order_date between '{date_interval['month_start_ds']}' and '{date_interval['yes_ds']}'
@@ -265,12 +423,9 @@ class PerformanceDaily(BaseDag):
                   when '切片' then 3
                   else 4
                 end
-                ,origin_gmv desc
+                ,final_gmv desc
         '''
-        tol_df = pd.read_sql(leader_month_target_sql, self.engine)
-        month_tol_df = tol_df[['project', 'origin_gmv', 'final_gmv', 'final_rate', 'income']]
-
-        month_target_tol_df = tol_df[['project', 'final_gmv', 'target_final', 'target_success_rate', 'income']]
+        month_target_tol_df = pd.read_sql(leader_month_target_sql, self.engine)
 
         sql = f'''
            select
@@ -450,7 +605,7 @@ class PerformanceDaily(BaseDag):
                 'anchor_leader': str(month_tol_df.project.iloc[i]),
                 'leader_yes_origin_gmv': str(month_origin_gmv),
                 'leader_yes_residue_gmv': str(month_final_gmv),
-                'leader_yes_commission_income': str(month_tol_df.income.apply(amount_convert).iloc[i]),
+                'leader_yes_commission_income': str(month_tol_df.commission_income.apply(amount_convert).iloc[i]),
                 'leader_yes_retrun_rate': str(month_final_rate)
             })
 
