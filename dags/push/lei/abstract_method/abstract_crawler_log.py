@@ -20,7 +20,7 @@ class AbstractCrawlerLog(AbstractDagTask):
                 'start_date': pendulum.datetime(2023, 1, 1),
             },
             tags=['push', 'crawler_log'],
-            robot_url=Variable.get('TEST')
+            robot_url=Variable.get('ZORO')
         )
         self.card_id = 'AAqRQE2J9JM0g'
 
