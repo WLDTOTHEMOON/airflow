@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 @dag(
     dag_id='update_crawler_log',
-    schedule='0 21,3 * * *',
+    schedule='*/20 21,3 * * *',
     default_args=
     {
         'owner': 'Lei Jiangling',
@@ -26,14 +26,14 @@ def update_crawler_log():
 
         task_id = ['18541124', '3054930335', '3892258892', '146458792']
 
-        if start_time.strftime('%H') == '05':
+        if start_time.strftime('%H') == '05' and start_time.strftime('%M') == '00':
             # 二创订单
             begin_time = start_time.subtract(days=1).strftime('%Y-%m-%d 04:00:00')
             end_time = start_time.strftime('%Y-%m-%d 04:00:00')
             for i in task_id:
                 sql = f'''
                         insert into tmp.tmp_crawler_log(task_id,start_time,end_time,status,update_time,remark)
-                            values('{i}','{begin_time}','{end_time}',4,null,null)
+                            values('{i}','{begin_time}','{end_time}',0,null,null)
                         '''
                 engine.connect().execute(sql)
 
@@ -42,24 +42,24 @@ def update_crawler_log():
             end_time = start_time.strftime('%Y-%m-%d %H:%M:%S')
             sql = f'''
                     insert into tmp.tmp_crawler_log(task_id,start_time,end_time,status,update_time,remark)
-                        values('86765902','{begin_time}','{end_time}',4,null,null)
+                        values('86765902','{begin_time}','{end_time}',0,null,null)
                         '''
             engine.connect().execute(sql)
 
             # MCN订单
             sql = f'''
                     insert into tmp.tmp_crawler_log(task_id,start_time,end_time,status,update_time,remark)
-                        values('MCN','{begin_time}','{end_time}',4,null,null)
+                        values('MCN','{begin_time}','{end_time}',0,null,null)
                                 '''
             engine.connect().execute(sql)
 
-        if start_time.strftime('%H') == '11':
+        if start_time.strftime('%H') == '11' and start_time.strftime('%M') == '00':
             # 直播记录
             begin_time = start_time.subtract(days=7).strftime('%Y-%m-%d 00:00:00')
             end_time = start_time.subtract(days=1).strftime('%Y-%m-%d 00:00:00')
             sql = f'''
                     insert into tmp.tmp_crawler_log(task_id,start_time,end_time,status,update_time,remark)
-                        values('live_record','{begin_time}','{end_time}',4,null,null)
+                        values('live_record','{begin_time}','{end_time}',0,null,null)
                         '''
             engine.connect().execute(sql)
 
@@ -71,7 +71,7 @@ def update_crawler_log():
 
         begin_time = start_time.subtract(days=11).strftime('%Y-%m-01')
         end_time = start_time.strftime('%Y-%m-01')
-        if start_time.strftime('%m') == '10' and start_time.strftime('%H') == '05':
+        if start_time.strftime('%m') == '10' and start_time.strftime('%H') == '05' and start_time.strftime('%M') == '00':
             for i in task_id:
                 sql = f'''
                             insert into tmp.tmp_crawler_log(task_id,start_time,end_time,status,update_time,remark)
@@ -100,7 +100,18 @@ def update_crawler_log():
                         '''
                 engine.connect().execute(sql)
 
+    @task
+    def update_log():
+        # 更新失败log
+        sql = f'''
+               UPDATE tmp.tmp_crawler_log
+                SET status = 0
+                WHERE status = 2;
+                            '''
+        engine.connect().execute(sql)
+
     insert_log()
     month_update_log()
+    update_log()
 
 update_crawler_log()
