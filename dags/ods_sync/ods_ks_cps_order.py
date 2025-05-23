@@ -79,7 +79,6 @@ def ods_ks_cps_order():
         where status = 1
             and open_id != %(leader_open_id)s
         order by open_id desc
-        limit 1
         '''
         open_ids = SQLExecuteQueryOperator(
             task_id='open_ids',
