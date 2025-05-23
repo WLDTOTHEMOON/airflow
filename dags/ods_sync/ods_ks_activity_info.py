@@ -84,7 +84,7 @@ def ods_ks_activity_info():
         ks_client = KsClient(**Variable.get('kuaishou', deserialize_json=True))
         current_time = pendulum.now('Asia/Shanghai').naive()
         LEADER_OPEN_ID = Variable.get('leader_open_id')
-        if (current_time - tokens['updated_at']).total_seconds() / 3600 < 999:
+        if (current_time - tokens['updated_at']).total_seconds() / 3600 < 12:
             logger.info('TOKEN有效期内，不需要更新')
             return tokens
         else:
