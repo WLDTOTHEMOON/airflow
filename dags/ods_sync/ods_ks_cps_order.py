@@ -79,6 +79,7 @@ def ods_ks_cps_order():
         where status = 1
             and open_id != %(leader_open_id)s
         order by open_id desc
+        limit 1
         '''
         open_ids = SQLExecuteQueryOperator(
             task_id='open_ids',
@@ -122,6 +123,7 @@ def ods_ks_cps_order():
         else:
             logger.info(f"更新TOKEN {tokens['open_id']}")
             new_tokens = ks_client.get_access_token(refresh_token=tokens['refresh_token'])
+            new_tokens['open_id'] = tokens['open_id']
             new_tokens['updated_at'] = current_time
             sql = f'''
             update xlsd.ks_token
@@ -129,7 +131,7 @@ def ods_ks_cps_order():
                 refresh_token = %(refresh_token)s,
                 access_token = %(access_token)s,
                 updated_at = %(updated_at)s
-            where open_id = %(leader_open_id)s
+            where open_id = %(open_id)s
             '''
             update_tokens = SQLExecuteQueryOperator(
                 task_id='update_tokens',
