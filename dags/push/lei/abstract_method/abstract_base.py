@@ -82,7 +82,10 @@ class AbstractDagTask(ABC):
         raise NotImplementedError
 
     def create_dag(self):
-        self.default_args.update(on_failure_callback=task_failure_callback)
+        self.default_args.update({
+            'on_failure_callback': task_failure_callback,
+            'retries': 3
+        })
 
         @dag(
             dag_id=self.dag_id,
@@ -92,7 +95,7 @@ class AbstractDagTask(ABC):
             catchup=False
         )
         def generated_dag():
-            @task(task_id='fetch_data_task', retries=2, multiple_outputs=False)
+            @task(task_id='fetch_data_task', multiple_outputs=False)
             def fetch_data_task(**kwargs):
                 return self.fetch_data(**kwargs)
 
