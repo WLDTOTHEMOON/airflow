@@ -647,8 +647,6 @@ def business_commission():
                           df['时间'] <= Variable.get('business_commission_end_date'))]
         filtered_df['主播账号'] = filtered_df['主播账号'].astype(int).astype(str)
         activity_session_df['主播账号'] = activity_session_df['主播账号'].astype(str)
-        logger.info(filtered_df)
-        logger.info(activity_session_df)
         merge_df = pd.merge(filtered_df, activity_session_df, how='left', on=['时间', '主播账号'])
         cps_sheet_id = feishu_sheet.create_sheet(spreadsheet_token=file_info_dict['spreadsheet_token'],
                                                  title='运营活动场数据')
