@@ -589,6 +589,24 @@ def business_commission():
 
     @task
     def get_activity_session(file_info_dict: Dict):
+        # 获取活动场数据
+        df = feishu_sheet.read_cells(spreadsheet_token='WouosDwmIhAmAxtwDPQcsmkMnbM', sheet_id='9f34bb',
+                                     ranges='A1:V2000')
+        df = df['valueRanges'][0]['values']
+        df = pd.DataFrame(df[2:], columns=['时间', '主播账号', '主播', ' 场次类型', '活动名称', '活动策划参与人1',
+                                           '活动策划参与人2', '活动策划负责人', '刘凯', '邓波', '肖鹏', '何海诺', '白玉婷',
+                                           '陈沛', '陈洋', '唐豪', '陈鹏', '侯悦', '王鑫', '周佳鑫', '流量运营参与人1',
+                                           '流量运营参与人2'])
+        df = df.dropna(axis=0, how='all')
+        df['时间'] = df['时间'].apply(lambda x: excel_time_convert(x).strftime('%Y-%m-%d'))
+        table_df = df[['时间', '主播账号']]
+        table_df.rename(columns={'时间': 'live_date', '主播账号': 'live_account'}, inplace=True)
+        clear_sql = '''
+            truncate table tmp.tmp_acticity_session
+        '''
+        engine.execute(clear_sql)
+        table_df.to_sql('tmp_acticity_session', engine, if_exists='append', index=False, schema='tmp')
+
         sql = '''
             select
                 live_account
@@ -619,16 +637,24 @@ def business_commission():
         })
         activity_session_df.live_date = activity_session_df.live_date.apply(lambda x: x.strftime('%Y-%m-%d'))
         activity_session_df = activity_session_df.rename(columns={
-            'live_account': '直播账号',
-            'live_date': '直播日期',
+            'live_account': '主播账号',
+            'live_date': '时间',
             'final_gmv': '结算GMV',
             'estimated_income': '佣金'
         })
+
+        filtered_df = df[(df['时间'] >= Variable.get('business_commission_start_date')) & (
+                          df['时间'] <= Variable.get('business_commission_end_date'))]
+        filtered_df['主播账号'] = filtered_df['主播账号'].astype(int).astype(str)
+        activity_session_df['主播账号'] = activity_session_df['主播账号'].astype(str)
+        logger.info(filtered_df)
+        logger.info(activity_session_df)
+        merge_df = pd.merge(filtered_df, activity_session_df, how='left', on=['时间', '主播账号'])
         cps_sheet_id = feishu_sheet.create_sheet(spreadsheet_token=file_info_dict['spreadsheet_token'],
                                                  title='运营活动场数据')
         sheet_id = cps_sheet_id['replies'][0]['addSheet']['properties']['sheetId']
 
-        feishu_sheet.write_df_replace(activity_session_df, file_info_dict['spreadsheet_token'], sheet_id)
+        feishu_sheet.write_df_replace(merge_df, file_info_dict['spreadsheet_token'], sheet_id)
 
     @task
     def get_slice_a_port_data(file_info_dict):
