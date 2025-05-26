@@ -85,4 +85,35 @@ left join (
     from ods.ods_fs_links
     where order_date >= '2023-11-01'
     group by item_id
-) item_belong_check on src.item_id = item_belong_check.item_id;
+) item_belong_check on src.item_id = item_belong_check.item_id
+union all
+select 
+	src.item_id item_id
+    ,src.order_date start_date
+    ,src.order_date end_date
+    ,null product_id
+    ,null product_name
+    ,item_info.item_category item_category
+    ,src.bd_name bd_name
+    ,null product_submit_at
+from (
+    select item_id, order_date, bd_name
+    from ods.ods_fs_links
+    where item_id not in (
+	    	select item_id
+	    	from dwd.dwd_pf_links
+	    ) 
+    	and bd_name is not null
+) src
+left join (
+    select 
+        item_id
+        ,item_category_name item_category
+    from (
+        select
+            *
+            ,row_number() over(partition by item_id order by item_apply_time desc) rn
+        from dwd.dwd_ks_activity_item_list
+    ) tmp
+    where rn = 1
+) item_info on src.item_id = item_info.item_id;
