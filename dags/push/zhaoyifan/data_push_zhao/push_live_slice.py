@@ -392,7 +392,7 @@ class LiveSlice(BaseDag):
         }, inplace=True)
         workbook_name = f"切片卖货数据_{data_dict['date_interval']['month_start_time']}_{data_dict['date_interval']['yes_time']}_{data_dict['date_interval']['now_time']}"
         workbook_url, spreadsheet_token = self.feishu_sheet_supply.get_workbook_params(
-            workbook_name=workbook_name, folder_token='Fn9ZfxSxylvMSsdwzGwcZPEGn9j')
+            workbook_name=workbook_name, folder_token='CbZqfKlQolFxKrdYdT0cFmtFnAe')
         slice_sheet_token = self.feishu_sheet_supply.get_sheet_params(spreadsheet_token, '切片卖货数据')
         other2_rank_sheet_token = self.feishu_sheet_supply.get_sheet_params(spreadsheet_token,
                                                                             '电商MCN(乐总)当月商品排名')
