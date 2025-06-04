@@ -186,7 +186,7 @@ class AbstractZnPerformance(AbstractDagTask):
         month_total_data['commission_rate'] = month_total_data['commission_income'] / month_total_data['final_gmv']
         month_total_data['avg_price'] = round(month_total_data['final_gmv'] / month_total_data['final_order_number'], 2)
         month_total_data['target'] = month_target_data['target_final'].values[0] if not month_target_data.empty else 0
-        month_total_data['target_rate'] = month_total_data['final_gmv'] / month_total_data['target'].values[0] if month_total_data['target'].values[0] > 0 else 0
+        month_total_data['target_rate'] = month_total_data['final_gmv'] / (month_total_data['target'].values[0] * 10000) if month_total_data['target'].values[0] > 0 else 0
         month_total_data = month_total_data[[
             'month', 'anchor_name', 'origin_gmv', 'final_gmv', 'final_rate', 'commission_income',
             'commission_rate', 'avg_price', 'target', 'target_rate'
@@ -298,7 +298,7 @@ class AbstractZnPerformance(AbstractDagTask):
             'month_origin_gmv': str(round(month_total_data['支付GMV'][0]/10000, 2)),
             'month_final_gmv': str(round(month_total_data['结算GMV'][0]/10000, 2)),
             'month_return_rate': str(month_total_data['结算率'][0]),
-            'month_target': str(round(month_total_data['target'][0]/10000, 2)),
+            'month_target': str(round(month_total_data['target'][0], 2)),
             'month_target_rate': str(month_total_data['target_rate'][0]),
             'month_commission_income': str(round(month_total_data['佣金'][0]/10000, 2)),
             'yes_day': str(title[1]),
