@@ -618,15 +618,14 @@ def business_commission():
                 select
                     order_date
                     ,account_id
-                    ,anchor_name
                     ,sum(final_gmv) final_gmv
                     ,sum(estimated_income + coalesce(estimated_service_income,0)) estimated_income
                 from dws.dws_ks_big_tbl dkeh
                 where order_date between %(start_date)s and %(end_date)s
                 group by
-                    1,2,3
+                    1,2
             )src on ta.live_account = src.account_id and ta.live_date = src.order_date
-            where order_date between %(start_date)s and %(end_date)s
+            where live_date between %(start_date)s and %(end_date)s
             order by
                 live_account asc
                 ,live_date asc
@@ -644,13 +643,21 @@ def business_commission():
         })
 
         filtered_df = df[(df['时间'] >= Variable.get('business_commission_start_date')) & (
-                          df['时间'] <= Variable.get('business_commission_end_date'))]
+                          df['时间'] <= Variable.get('business_commission_end_date'))].reset_index(drop=True)
+        logger.info(filtered_df)
+        logger.info(activity_session_df)
         filtered_df['主播账号'] = filtered_df['主播账号'].astype(int).astype(str)
         activity_session_df['主播账号'] = activity_session_df['主播账号'].astype(str)
-        merge_df = pd.merge(filtered_df, activity_session_df, how='left', on=['时间', '主播账号'])
+        # merge_df = pd.merge(filtered_df, activity_session_df, how='left', on=['时间', '主播账号'])
+        filtered_df = filtered_df.sort_values(by=['时间', '主播账号']).reset_index(drop=True)
+        activity_session_df = activity_session_df.sort_values(by=['时间', '主播账号']).reset_index(drop=True)
+        activity_session_df = activity_session_df.drop(columns=['时间', '主播账号'])
+
+        merge_df = pd.concat([filtered_df, activity_session_df], axis=1)
         cps_sheet_id = feishu_sheet.create_sheet(spreadsheet_token=file_info_dict['spreadsheet_token'],
                                                  title='运营活动场数据')
         sheet_id = cps_sheet_id['replies'][0]['addSheet']['properties']['sheetId']
+        logger.info(merge_df)
 
         feishu_sheet.write_df_replace(merge_df, file_info_dict['spreadsheet_token'], sheet_id)
 
