@@ -25,101 +25,102 @@ class RiskWeekly(BaseDag):
         week_end_time = end_datetime.end_of('week').subtract(weeks=1).format('YYYYMMDD')
         now_datetime = end_datetime.format('YYYYMMDDHHmm')
 
-        # date_interval = {
-        #     'week_start_date': '2025-04-14',
-        #     'week_end_date': '2025-04-20',
-        #     'week_start_time': '20250414',
-        #     'week_end_time': '20250414',
-        #     "now_time": date_interval['now_time']
-        # }
+        # week_start_date = '2025-05-01'
+        # week_end_date = '2025-05-31'
+        # week_start_time = '20250501'
+        # week_end_time = '20250531'
+        # now_datetime = date_interval['now_time']
 
-        print('读取数据，请稍后')
-        audit_count_sql = f'''
-            with tol as(
+        src_aql = f'''
+            select 
+                pro.id product_id
+                ,pro.name product_name
+                ,brand
+                ,cat.category_name
+                ,sup.name supplier_name
+                ,pro.mfrName mfrname
+                ,bd.name bd_name
+                ,is_white
+                ,roles
+                ,act
+                ,roles_count
+                ,case 
+                    when roles is null and status != 2 then null
+                    when roles is null and status = 2 then '质控审核中'
+                    when act not in  ('退回','成本退回','质控退回') and result = '不通过'
+                        or act = '退回' and roles_count = 1 and result = '不通过'
+                        or act = '退回' and roles_count > 1 and roles = '成本' and result = '不通过'
+                        or act = '退回' and roles_count > 1 and roles = '质控' and result = '不通过' and deny_type != ''
+                        or act = '成本退回' and roles_count > 1 and roles = '管理员'
+                        then '不通过'
+                    when act not in  ('退回','成本退回','质控退回') and result = '不通过不可再提交'
+                        or act = '退回' and roles_count = 1 and result = '不通过不可再提交'
+                        or act = '退回' and roles_count > 1 and roles = '成本' and result = '不通过不可再提交'
+                        or act = '退回' and roles_count > 1 and roles = '质控' and result = '不通过不可再提交' and deny_type != ''
+                        then '不通过不可再提交'
+                    when act not in  ('退回','成本退回','质控退回') and result = '通过'
+                        or act = '退回' and roles_count > 1 and roles = '质控' and deny_type = '' 
+                        or act = '质控退回' and roles_count > 1 and roles = '管理员'
+                        then '通过'
+                    else '未知结果'
+                end result
+                ,deny_type
+                ,last_roles
+                ,last_result
+                ,roles_audit_num
+                ,roles_desc_audit_num
+                ,audit_num
+                ,desc_audit_num
+                ,advice
+                ,audit.name audit_users_name
+                ,submit_time
+                ,audit_time
+            from (
                 select 
-                    pro.id product_id
-                    ,pro.name product_name
+                    id 
+                    ,name 
                     ,brand
-                    ,cat.category_name
-                    ,sup.name supplier_name
-                    ,pro.mfrName mfrname
-                    ,bd.name bd_name
-                    ,is_white
-                    ,roles
-                    ,act
-                    ,roles_count
-                    ,case 
-                        when roles is null and status != 2 then null
-                        when roles is null and status = 2 then '质控审核中'
-                        when act != '退回' and result = '不通过'
-                            or act = '退回' and roles_count = 1 and result = '不通过'
-                            or act = '退回' and roles_count > 1 and roles = '成本'  and result = '不通过'
-                            or act = '退回' and roles_count > 1 and roles = '质控' and result = '不通过' and deny_type != ''
-                            then '不通过'
-                        when act != '退回' and result = '不通过不可再提交'
-                            or act = '退回' and roles_count = 1 and result = '不通过不可再提交'
-                            or act = '退回' and roles_count > 1 and roles = '成本' and result = '不通过不可再提交'
-                            or act = '退回' and roles_count > 1 and roles = '质控' and result = '不通过不可再提交' and deny_type != ''
-                            then '不通过不可再提交'
-                        when act != '退回' and result = '通过'
-                            or act = '退回' and roles_count > 1 and roles = '质控' and deny_type = '' 
-                            then '通过'
-                        else '未知结果'
-                    end result 
-                    ,deny_type
-                    ,last_roles
-                    ,last_result
-                    ,roles_audit_num
-                    ,roles_desc_audit_num
-                    ,audit_num
-                    ,desc_audit_num
-                    ,advice
-                    ,audit.name audit_users_name
-                    ,submit_time
-                    ,audit_time
-                from (
+                    ,mfrName
+                    ,status
+                    ,supplier_id 
+                    ,SUBSTRING_INDEX(class,',',1) class 
+                    ,created_at submit_time
+                    ,if(is_white = 0,'非白名单','白名单') is_white
+                from xlsd.products p 
+                where by_anchor = 0
+                    and date(created_at) between '{week_start_date}' and '{week_end_date}'
+            )pro 
+            left join (
+                select
+                    *
+                    ,count(if(roles_audit_num = 1,roles,null)) over(partition by target_id) roles_count
+                    ,lag(roles) over(partition by target_id order by audit_num) last_roles
+                    ,lag(result) over(partition by target_id order by audit_num) last_result
+                from(
                     select 
-                        id 
-                        ,name 
-                        ,brand
-                        ,mfrName
-                        ,status
-                        ,supplier_id 
-                        ,SUBSTRING_INDEX(class,',',1) class 
-                        ,created_at submit_time
-                        ,if(is_white = 0,'非白名单','白名单') is_white
-                    from xlsd.products p 
-                    where by_anchor = 0
-                        and date(created_at) between '{week_start_date}' and '{week_end_date}'
-                )pro 
-                left join (
-                    select
-                        *
-                        ,count(if(roles_audit_num = 1,roles,null)) over(partition by target_id) roles_count
-                        ,lag(roles) over(partition by target_id order by audit_num) last_roles
-                        ,lag(result) over(partition by target_id order by audit_num) last_result
-                    from(
+                        rev.*
+                        ,row_number() over(partition by rev.target_id,roles order by audit_time) roles_audit_num
+                        ,row_number() over(partition by rev.target_id,roles order by audit_time desc) roles_desc_audit_num
+                    from (
                         select 
                             rev.*
-                            ,row_number() over(partition by rev.target_id,roles order by audit_time) roles_audit_num
-                            ,row_number() over(partition by rev.target_id,roles order by audit_time desc) roles_desc_audit_num
+                            ,SUBSTRING_INDEX(roles_act,'_',1)  roles
+                            ,SUBSTRING_INDEX(roles_act,'_',-1) act
                         from (
                             select 
                                 target_id 
                                 ,user_id	
                                 ,case 
-                                    when act in (0,1) then '质控'
-                                    when act in (3,15,12) and result != 23 then '成本'
-                                    when act = 12 and result = 23 then '管理员'
+                                    when act = 1 and result in (3,4,5,13) then '质控_复审' 
+                                    when act in (0,1,13) and result in (14) and user_id != 'admin' then '质控_退回'
+                                    when act in (0,13) and result = 4 then '质控_退回'
+                                    when act in (3,15,12) and result in (9,10,22,25) then '成本_终审'
+                                    when act in (12,1,14) and result = 20 then '成本_退回'
+                                    when act in (1) and result in (14) and user_id = 'admin' then '管理员_质控退回'
+                                    when act in (3) and result in (20) and user_id = 'admin' then '管理员_成本退回'
+                                    when act = 12 and result = 23 then '管理员_走白名单跳过品控'
                                     else '未知'
-                                end roles
-                                ,case 
-                                    when act = 1 and result in (3,4,13,14,5,18) and user_id not in ('admin') then '复审'
-                                    when (act = 0 or user_id ='admin') and result in (4,14) or act = 12 and result = 20 then '退回'
-                                    when act in (3,15,12) and result != 23 then '终审'
-                                    when act = 12 and result = 23 then '走白名单跳过品控'
-                                    else '未知'
-                                end act
+                                end roles_act
                                 ,case 
                                     when result in (3,13,14,9,20,25) then '不通过'
                                     when result = 4 then '不通过不可再提交'
@@ -141,28 +142,32 @@ class RiskWeekly(BaseDag):
                                 and result in (3,4,13,14,5,18,9,10,20,22,23,25)
                                 and act not in (4,8)
                         ) rev
-                    )rev
-                )rev on pro.id = rev.target_id
-                left join (
-                    select 
-                        id,commerce,name 
-                    from xlsd.suppliers s 
-                )sup on pro.supplier_id = sup.id
-                left join (
-                    select 
-                        id,name
-                    from xlsd.users u 
-                )bd on sup.commerce = bd.id
-                left join (	
-                    select 
-                        id,name
-                    from xlsd.users u 
-                )audit on rev.user_id = audit.id
-                left join (
-                  select category_id, category_name
-                  from ods.ods_item_category oic 
-                ) cat on pro.class collate utf8mb4_0900_ai_ci = cat.category_id
-            )
+                    ) rev
+                )rev
+            )rev on pro.id = rev.target_id
+            left join (
+                select 
+                    id,commerce,name 
+                from xlsd.suppliers s 
+            )sup on pro.supplier_id = sup.id
+            left join (
+                select 
+                    id,name
+                from xlsd.users u 
+            )bd on sup.commerce = bd.id
+            left join (	
+                select 
+                    id,name
+                from xlsd.users u 
+            )audit on rev.user_id = audit.id
+            left join (
+              select category_id, category_name
+              from ods.ods_item_category oic 
+            ) cat on pro.class collate utf8mb4_0900_ai_ci = cat.category_id
+        '''
+
+        print('读取数据，请稍后')
+        audit_count_sql = f'''
             select 
                 bd_name '商务'
                 ,count(distinct product_id) '提报数量'
@@ -170,17 +175,17 @@ class RiskWeekly(BaseDag):
                 ,count(distinct if(result = '质控审核中',product_id,null)) '质控审核中'
                 ,count(distinct if(roles_desc_audit_num = 1 and roles = '质控' and result in ('不通过','不通过不可再提交'),product_id,null)) '质控驳回'
                 ,count(distinct if(roles_desc_audit_num = 1 and roles = '质控' and result = '通过',product_id,null)) '质控通过'
-                ,count(distinct if(roles = '管理员',product_id,null)) '走白名单跳过品控'
+                ,count(distinct if(roles = '管理员' and act = '走白名单跳过品控',product_id,null)) '走白名单跳过品控'
                 ,count(distinct if(desc_audit_num = 1 and roles_count = 1 and result = '通过',product_id,null)) '成本审核中'
                 ,count(distinct if(
-                    desc_audit_num = 1 and (roles = '成本' and result = '不通过' or roles in ('质控','管理员') and act = '退回' and result = '通过' and last_roles = '成本' and last_result = '不通过')
+                    desc_audit_num = 1 and (roles in ('成本','管理员') and result in ('不通过') or roles in ('质控','管理员') and act in ('退回','走白名单跳过品控','质控退回') and result = '通过' and last_roles = '成本' and last_result = '不通过')
                     ,product_id,null)
                 ) '成本驳回'
                 ,count(distinct if(
-                    desc_audit_num = 1 and (roles = '成本' and result = '通过' or roles = '质控' and act = '退回' and result = '通过' and last_roles = '成本' and last_result = '通过')
+                    desc_audit_num = 1 and (roles = '成本' and result = '通过' or roles in ('质控','管理员') and act in ('退回','质控退回') and result = '通过' and last_roles = '成本' and last_result = '通过')
                     ,product_id,null)
                 ) '成本通过'
-            from tol 
+            from ({src_aql}) src
             where bd_name not in ('方涌超', '张澜', '管理员', '雷江玲', '赵乙都', '张小卓')
             group by 1
             order by `提报数量` desc
@@ -188,134 +193,6 @@ class RiskWeekly(BaseDag):
         audit_count_df = pd.read_sql(audit_count_sql, self.engine)
 
         qc_audit_sql = f'''
-            with tol as(
-                select 
-                    pro.id product_id
-                    ,pro.name product_name
-                    ,brand
-                    ,cat.category_name
-                    ,sup.name supplier_name
-                    ,pro.mfrName mfrname
-                    ,bd.name bd_name
-                    ,is_white
-                    ,roles
-                    ,act
-                    ,roles_count
-                    ,case 
-                        when roles is null and status != 2 then null
-                        when roles is null and status = 2 then '质控审核中'
-                        when act != '退回' and result = '不通过'
-                            or act = '退回' and roles_count = 1 and result = '不通过'
-                            or act = '退回' and roles_count > 1 and roles = '成本'  and result = '不通过'
-                            or act = '退回' and roles_count > 1 and roles = '质控' and result = '不通过' and deny_type != ''
-                            then '不通过'
-                        when act != '退回' and result = '不通过不可再提交'
-                            or act = '退回' and roles_count = 1 and result = '不通过不可再提交'
-                            or act = '退回' and roles_count > 1 and roles = '成本' and result = '不通过不可再提交'
-                            or act = '退回' and roles_count > 1 and roles = '质控' and result = '不通过不可再提交' and deny_type != ''
-                            then '不通过不可再提交'
-                        when act != '退回' and result = '通过'
-                            or act = '退回' and roles_count > 1 and roles = '质控' and deny_type = '' 
-                            then '通过'
-                        else '未知结果'
-                    end result 
-                    ,deny_type
-                    ,last_roles
-                    ,last_result
-                    ,roles_audit_num
-                    ,roles_desc_audit_num
-                    ,audit_num
-                    ,desc_audit_num
-                    ,advice
-                    ,audit.name audit_users_name
-                    ,submit_time
-                    ,audit_time
-                from (
-                    select 
-                        id 
-                        ,name 
-                        ,brand
-                        ,mfrName
-                        ,status
-                        ,supplier_id 
-                        ,SUBSTRING_INDEX(class,',',1) class 
-                        ,created_at submit_time
-                        ,if(is_white = 0,'非白名单','白名单') is_white
-                    from xlsd.products p 
-                    where by_anchor = 0
-                        and date(created_at) between '{week_start_date}' and '{week_end_date}'
-                )pro 
-                left join (
-                    select
-                        *
-                        ,count(if(roles_audit_num = 1,roles,null)) over(partition by target_id) roles_count
-                        ,lag(roles) over(partition by target_id order by audit_num) last_roles
-                        ,lag(result) over(partition by target_id order by audit_num) last_result
-                    from(
-                        select 
-                            rev.*
-                            ,row_number() over(partition by rev.target_id,roles order by audit_time) roles_audit_num
-                            ,row_number() over(partition by rev.target_id,roles order by audit_time desc) roles_desc_audit_num
-                        from (
-                            select 
-                                target_id 
-                                ,user_id	
-                                ,case 
-                                    when act in (0,1) then '质控'
-                                    when act in (3,15,12) and result != 23 then '成本'
-                                    when act = 12 and result = 23 then '管理员'
-                                    else '未知'
-                                end roles
-                                ,case 
-                                    when act = 1 and result in (3,4,13,14,5,18) and user_id not in ('admin') then '复审'
-                                    when (act = 0 or user_id ='admin') and result in (4,14) or act = 12 and result = 20 then '退回'
-                                    when act in (3,15,12) and result != 23 then '终审'
-                                    when act = 12 and result = 23 then '走白名单跳过品控'
-                                    else '未知'
-                                end act
-                                ,case 
-                                    when result in (3,13,14,9,20,25) then '不通过'
-                                    when result = 4 then '不通过不可再提交'
-                                    when result in (5,18,10,22,23) then '通过'
-                                    else '未知'
-                                end result
-                                ,case 
-                                        when deny_type_1 = '' then ''
-                                        when deny_type_1 != '' and deny_type_2 = '' then deny_type_1 
-                                        else concat(deny_type_1,',',deny_type_2)
-                                end deny_type
-                                ,row_number() over(partition by target_id order by created_at) audit_num
-                                ,row_number() over(partition by target_id order by created_at desc) desc_audit_num
-                                ,replace(advice,'\n',';')  advice 
-                                ,created_at audit_time
-                            from xlsd.review r 
-                            where target = 'product'
-                                and status = 1
-                                and result in (3,4,13,14,5,18,9,10,20,22,23,25)
-                                and act not in (4,8)
-                        ) rev
-                    )rev
-                )rev on pro.id = rev.target_id
-                left join (
-                    select 
-                        id,commerce,name 
-                    from xlsd.suppliers s 
-                )sup on pro.supplier_id = sup.id
-                left join (
-                    select 
-                        id,name
-                    from xlsd.users u 
-                )bd on sup.commerce = bd.id
-                left join (	
-                    select 
-                        id,name
-                    from xlsd.users u 
-                )audit on rev.user_id = audit.id
-                left join (
-                  select category_id, category_name
-                  from ods.ods_item_category oic 
-                ) cat on pro.class collate utf8mb4_0900_ai_ci = cat.category_id
-            )
             select 
                 bd_name '商务'
                 ,count(distinct if(roles = '质控',product_id,null)) '到质控的提报数量'
@@ -323,7 +200,7 @@ class RiskWeekly(BaseDag):
                 ,count(distinct if(roles_audit_num = 1 and roles = '质控' and result = '通过',product_id,null)) '质控一审通过'
                 ,count(distinct if(roles_desc_audit_num = 1 and roles = '质控' and result in ('不通过','不通过不可再提交'),product_id,null)) '质控终审驳回'
                 ,count(distinct if(roles_desc_audit_num = 1 and roles = '质控' and result = '通过',product_id,null)) '质控终审通过'
-            from tol 
+            from ({src_aql}) src
             group by 1
             having `商务` not in ('方涌超', '张澜', '管理员', '雷江玲', '赵乙都', '张小卓') 
                 and `到质控的提报数量` != 0
@@ -332,134 +209,6 @@ class RiskWeekly(BaseDag):
         qc_audit_df = pd.read_sql(qc_audit_sql, self.engine)
 
         bd_advice_sql = f'''
-            with tol as(
-                select 
-                    pro.id product_id
-                    ,pro.name product_name
-                    ,brand
-                    ,cat.category_name
-                    ,sup.name supplier_name
-                    ,pro.mfrName mfrname
-                    ,bd.name bd_name
-                    ,is_white
-                    ,roles
-                    ,act
-                    ,roles_count
-                    ,case 
-                        when roles is null and status != 2 then null
-                        when roles is null and status = 2 then '质控审核中'
-                        when act != '退回' and result = '不通过'
-                            or act = '退回' and roles_count = 1 and result = '不通过'
-                            or act = '退回' and roles_count > 1 and roles = '成本'  and result = '不通过'
-                            or act = '退回' and roles_count > 1 and roles = '质控' and result = '不通过' and deny_type != ''
-                            then '不通过'
-                        when act != '退回' and result = '不通过不可再提交'
-                            or act = '退回' and roles_count = 1 and result = '不通过不可再提交'
-                            or act = '退回' and roles_count > 1 and roles = '成本' and result = '不通过不可再提交'
-                            or act = '退回' and roles_count > 1 and roles = '质控' and result = '不通过不可再提交' and deny_type != ''
-                            then '不通过不可再提交'
-                        when act != '退回' and result = '通过'
-                            or act = '退回' and roles_count > 1 and roles = '质控' and deny_type = '' 
-                            then '通过'
-                        else '未知结果'
-                    end result 
-                    ,deny_type
-                    ,last_roles
-                    ,last_result
-                    ,roles_audit_num
-                    ,roles_desc_audit_num
-                    ,audit_num
-                    ,desc_audit_num
-                    ,advice
-                    ,audit.name audit_users_name
-                    ,submit_time
-                    ,audit_time
-                from (
-                    select 
-                        id 
-                        ,name 
-                        ,brand
-                        ,mfrName
-                        ,status
-                        ,supplier_id 
-                        ,SUBSTRING_INDEX(class,',',1) class 
-                        ,created_at submit_time
-                        ,if(is_white = 0,'非白名单','白名单') is_white
-                    from xlsd.products p 
-                    where by_anchor = 0
-                        and date(created_at) between '{week_start_date}' and '{week_end_date}'
-                )pro 
-                left join (
-                    select
-                        *
-                        ,count(if(roles_audit_num = 1,roles,null)) over(partition by target_id) roles_count
-                        ,lag(roles) over(partition by target_id order by audit_num) last_roles
-                        ,lag(result) over(partition by target_id order by audit_num) last_result
-                    from(
-                        select 
-                            rev.*
-                            ,row_number() over(partition by rev.target_id,roles order by audit_time) roles_audit_num
-                            ,row_number() over(partition by rev.target_id,roles order by audit_time desc) roles_desc_audit_num
-                        from (
-                            select 
-                                target_id 
-                                ,user_id	
-                                ,case 
-                                    when act in (0,1) then '质控'
-                                    when act in (3,15,12) and result != 23 then '成本'
-                                    when act = 12 and result = 23 then '管理员'
-                                    else '未知'
-                                end roles
-                                ,case 
-                                    when act = 1 and result in (3,4,13,14,5,18) and user_id not in ('admin') then '复审'
-                                    when (act = 0 or user_id ='admin') and result in (4,14) or act = 12 and result = 20 then '退回'
-                                    when act in (3,15,12) and result != 23 then '终审'
-                                    when act = 12 and result = 23 then '走白名单跳过品控'
-                                    else '未知'
-                                end act
-                                ,case 
-                                    when result in (3,13,14,9,20,25) then '不通过'
-                                    when result = 4 then '不通过不可再提交'
-                                    when result in (5,18,10,22,23) then '通过'
-                                    else '未知'
-                                end result
-                                ,case 
-                                        when deny_type_1 = '' then ''
-                                        when deny_type_1 != '' and deny_type_2 = '' then deny_type_1 
-                                        else concat(deny_type_1,',',deny_type_2)
-                                end deny_type
-                                ,row_number() over(partition by target_id order by created_at) audit_num
-                                ,row_number() over(partition by target_id order by created_at desc) desc_audit_num
-                                ,replace(advice,'\n',';')  advice 
-                                ,created_at audit_time
-                            from xlsd.review r 
-                            where target = 'product'
-                                and status = 1
-                                and result in (3,4,13,14,5,18,9,10,20,22,23,25)
-                                and act not in (4,8)
-                        ) rev
-                    )rev
-                )rev on pro.id = rev.target_id
-                left join (
-                    select 
-                        id,commerce,name 
-                    from xlsd.suppliers s 
-                )sup on pro.supplier_id = sup.id
-                left join (
-                    select 
-                        id,name
-                    from xlsd.users u 
-                )bd on sup.commerce = bd.id
-                left join (	
-                    select 
-                        id,name
-                    from xlsd.users u 
-                )audit on rev.user_id = audit.id
-                left join (
-                  select category_id, category_name
-                  from ods.ods_item_category oic 
-                ) cat on pro.class collate utf8mb4_0900_ai_ci = cat.category_id
-            )
             select  
                 bd_name '商务'
                 ,count(distinct product_id) '到质控的提报数量'
@@ -488,7 +237,7 @@ class RiskWeekly(BaseDag):
                         from (
                             select 
                                 *
-                            from tol 
+                            from ({src_aql}) src
                             where roles = '质控' 
                         ) src
                         join(
@@ -864,6 +613,36 @@ class RiskWeekly(BaseDag):
         adjust_anchor_df = data_dict['adjust_anchor_df']
         adjust_bd_df = data_dict['adjust_bd_df']
 
+        sheet_title = f"风控部周报数据_{data_dict['week_start_time']}_{data_dict['week_end_time']}_{data_dict['now_datetime']}"
+        url, spreadsheet_token = self.feishu_sheet_supply.get_workbook_params(
+            workbook_name=sheet_title, folder_token='QidBfm7zOlDGOsdGqnycUbe0nKd'
+        )
+
+        bd_adv_sheet_id = self.feishu_sheet_supply.get_sheet_params(spreadsheet_token, '入库商品SABC汇总')
+        qc_sheet_id = self.feishu_sheet_supply.get_sheet_params(spreadsheet_token, '商务提报&审核数据（质控）')
+        anchor_sheet_id = self.feishu_sheet_supply.get_sheet_params(spreadsheet_token,
+                                                                    '驳回品机制调整和意见类型数据（自采）')
+        bd_sheet_id = self.feishu_sheet_supply.get_sheet_params(spreadsheet_token,
+                                                                '驳回品机制调整和意见类型数据（招商）')
+        sheet_id = self.feishu_sheet_supply.get_sheet_params(spreadsheet_token, '商务提报&审核数据（风控部）')
+        self.feishu_sheet.write_df_replace(bd_advice_df, spreadsheet_token, bd_adv_sheet_id, to_char=False)
+        self.feishu_sheet.write_df_replace(qc_audit_df, spreadsheet_token, qc_sheet_id, to_char=False)
+        self.feishu_sheet.write_df_replace(adjust_anchor_df, spreadsheet_token, anchor_sheet_id, to_char=False)
+        self.feishu_sheet.write_df_replace(adjust_bd_df, spreadsheet_token, bd_sheet_id, to_char=False)
+        self.feishu_sheet.write_df_replace(audit_count_df, spreadsheet_token, sheet_id, to_char=False)
+
+        return {
+            'audit_count_df': audit_count_df,
+            'qc_audit_df': qc_audit_df,
+            'bd_advice_df': bd_advice_df,
+            'file_name': sheet_title,
+            'url': url
+        }
+
+    def send_card_logic(self, card: Dict[str, Any], sheet):
+        audit_count_df = sheet['audit_count_df']
+        qc_audit_df = sheet['qc_audit_df']
+        bd_advice_df = sheet['bd_advice_df']
         try:
             c1 = audit_count_df['提报数量'] == (
                     audit_count_df['未到质控'] + audit_count_df['质控审核中'] + audit_count_df['质控驳回'] +
@@ -892,39 +671,15 @@ class RiskWeekly(BaseDag):
                 # print(f"数据验证失败")
 
             print("数据验证通过，进程继续。")
-
-            sheet_title = f"风控部周报数据_{data_dict['week_start_time']}_{data_dict['week_end_time']}_{data_dict['now_datetime']}"
-            url, spreadsheet_token = self.feishu_sheet_supply.get_workbook_params(
-                workbook_name=sheet_title, folder_token='QidBfm7zOlDGOsdGqnycUbe0nKd'
-            )
-
-            bd_adv_sheet_id = self.feishu_sheet_supply.get_sheet_params(spreadsheet_token, '入库商品SABC汇总')
-            qc_sheet_id = self.feishu_sheet_supply.get_sheet_params(spreadsheet_token, '商务提报&审核数据（质控）')
-            anchor_sheet_id = self.feishu_sheet_supply.get_sheet_params(spreadsheet_token,
-                                                                        '驳回品机制调整和意见类型数据（自采）')
-            bd_sheet_id = self.feishu_sheet_supply.get_sheet_params(spreadsheet_token,
-                                                                    '驳回品机制调整和意见类型数据（招商）')
-            sheet_id = self.feishu_sheet_supply.get_sheet_params(spreadsheet_token, '商务提报&审核数据（风控部）')
-            self.feishu_sheet.write_df_replace(bd_advice_df, spreadsheet_token, bd_adv_sheet_id, to_char=False)
-            self.feishu_sheet.write_df_replace(qc_audit_df, spreadsheet_token, qc_sheet_id, to_char=False)
-            self.feishu_sheet.write_df_replace(adjust_anchor_df, spreadsheet_token, anchor_sheet_id, to_char=False)
-            self.feishu_sheet.write_df_replace(adjust_bd_df, spreadsheet_token, bd_sheet_id, to_char=False)
-            self.feishu_sheet.write_df_replace(audit_count_df, spreadsheet_token, sheet_id, to_char=False)
-
-            return {
-                'file_name': sheet_title,
-                'url': url
+            res = {
+                'title': '风控部周报数据',
+                'file_name': sheet['file_name'],
+                'url': sheet['url'],
+                'description': '数据请见下方链接附件'
             }
+            self.feishu_robot.send_msg_card(data=res, card_id=self.card_id, version_name='1.0.0')
         except ValueError as e:
             print(f"数据验证失败: {e}, 抛出空数据。")
-
-    def send_card_logic(self, card: Dict[str, Any], sheet):
-        res = {
-            'title': '风控部周报数据',
-            **sheet,
-            'description': '数据请见下方链接附件'
-        }
-        self.feishu_robot.send_msg_card(data=res, card_id=self.card_id, version_name='1.0.0')
 
 
 dag = RiskWeekly().create_dag()
