@@ -16,8 +16,6 @@ services:
       timeout: 5s
       retries: 10
       start_period: 10s
-    networks:
-      - airflow-net
 
   airflow-init:
     image: my_airflow
@@ -32,8 +30,6 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    networks:
-      - airflow-net
 
   airflow-webserver:
     image: my_airflow
@@ -52,8 +48,6 @@ services:
     depends_on:
       airflow-init:
         condition: service_completed_successfully
-    networks:
-      - airflow-net
 
   airflow-scheduler:
     image: my_airflow
@@ -72,8 +66,6 @@ services:
     depends_on:
       airflow-init:
         condition: service_completed_successfully
-    networks:
-      - airflow-net
 
 volumes:
   postgres_data:
